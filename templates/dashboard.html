@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+{% block title %}Tổng quan – StudyAI{% endblock %}
+{% block content %}
+<div class="page-title"><i class="bi bi-house-door"></i> Xin chào, {{ current_user.full_name or current_user.username }}</div>
+
+<div class="row g-3 mb-3">
+  <div class="col-6 col-md-3">
+    <div class="stat-card">
+      <div class="label">GPA hệ 4</div>
+      <div class="value">{% if summary %}{{ summary.gpa4 }}{% else %}—{% endif %}</div>
+      <div class="small text-muted mt-1">{% if summary %}Hệ 10: {{ summary.gpa10 }}{% else %}Chưa có điểm{% endif %}</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="stat-card success">
+      <div class="label">Xếp loại</div>
+      <div class="value" style="font-size:1.35rem">{% if summary %}{{ summary.rank }}{% else %}—{% endif %}</div>
+      <div class="small text-muted mt-1">{% if summary and summary.projected_rank %}Dự kiến TN: {{ summary.projected_rank }}{% endif %}</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="stat-card warning">
+      <div class="label">Deadline sắp tới</div>
+      <div class="value">{{ upcoming|length }}</div>
+      <div class="small text-muted mt-1">Chưa hoàn thành</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="stat-card accent">
+      <div class="label">Kế hoạch hôm nay</div>
+      <div class="value">{{ todays_plan|length }}</div>
+      <div class="small text-muted mt-1">buổi học</div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3">
+  <div class="col-md-4">
+    <div class="card h-100">
+      <div class="card-header"><i class="bi bi-calendar-event me-1 text-primary"></i>
+        Hôm nay · {{ WEEKDAYS[today.weekday()] }}, {{ today.strftime('%d/%m') }}
+      </div>
+      <ul class="list-group list-group-flush">
+        {% for s in classes %}
+        <li class="list-group-item d-flex justify-content-between align-items-center">
+          <span>
+            <span class="badge bg-primary bg-opacity-10 text-primary me-1">{{ s.start_time.strftime('%H:%M') }}–{{ s.end_time.strftime('%H:%M') }}</span>
+            <b>{{ s.subject.name }}</b>
+            {% if s.room %}<small class="text-muted">· {{ s.room }}</small>{% endif %}
+          </span>
+        </li>
+        {% else %}
+        <li class="list-group-item empty-state">Không có tiết học</li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card h-100">
+      <div class="card-header"><i class="bi bi-alarm me-1 text-warning"></i> Deadline sắp tới</div>
+      <ul class="list-group list-group-flush">
+        {% for d in upcoming %}
+        <li class="list-group-item d-flex justify-content-between align-items-start">
+          <span>{{ d.title }}<br><small class="text-muted">{{ d.subject.name }}</small></span>
+          <span class="badge rounded-pill {{ 'bg-danger' if d.days_left <= 2 else 'bg-warning text-dark' if d.days_left <= 5 else 'bg-secondary' }}">
+            {{ d.days_left }} ngày
+          </span>
+        </li>
+        {% else %}
+        <li class="list-group-item empty-state">Không có deadline 🎉</li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card h-100">
+      <div class="card-header"><i class="bi bi-list-check me-1 text-success"></i> Kế hoạch hôm nay</div>
+      <ul class="list-group list-group-flush">
+        {% for p in todays_plan %}
+        <li class="list-group-item d-flex justify-content-between align-items-center">
+          <span class="{{ 'text-decoration-line-through text-muted' if p.done }}">
+            {{ p.subject.name }} – {{ p.note }}
+            <span class="badge bg-light text-dark">{{ p.hours }}h</span>
+          </span>
+          <form method="post" action="{{ url_for('toggle_plan', pid=p.id) }}">
+            <button class="btn btn-sm {{ 'btn-success' if p.done else 'btn-outline-success' }}">✓</button>
+          </form>
+        </li>
+        {% else %}
+        <li class="list-group-item empty-state">Chưa có kế hoạch. <a href="{{ url_for('plan') }}">Lập ngay</a></li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+  <div class="col-md-6">
+    <div class="card">
+      <div class="card-header"><i class="bi bi-lightbulb me-1 text-info"></i> Nên ôn gì?</div>
+      <ul class="list-group list-group-flush">
+        {% for r in recs %}
+        <li class="list-group-item d-flex justify-content-between">
+          <span><b>{{ r.subject.name }}</b> – {{ r.topic }}</span>
+          <span class="badge bg-info text-dark">~{{ r.hours }}h</span>
+        </li>
+        {% else %}
+        <li class="list-group-item empty-state">Chưa phát hiện chủ đề yếu</li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+  <div class="col-md-6">
+    <div class="card">
+      <div class="card-header"><i class="bi bi-robot me-1"></i> Hỏi nhanh StudyAI</div>
+      <div class="card-body">
+        <p class="text-muted small mb-2">Thử hỏi chatbot những câu như:</p>
+        <div class="d-flex flex-wrap gap-2">
+          <a href="{{ url_for('chat') }}" class="btn btn-sm btn-outline-primary">Hôm nay học gì?</a>
+          <a href="{{ url_for('chat') }}" class="btn btn-sm btn-outline-primary">Deadline tuần này</a>
+          <a href="{{ url_for('chat') }}" class="btn btn-sm btn-outline-primary">GPA của tôi thế nào?</a>
+          <a href="{{ url_for('chat') }}" class="btn btn-sm btn-outline-primary">Cần bao nhiêu điểm cuối kỳ?</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

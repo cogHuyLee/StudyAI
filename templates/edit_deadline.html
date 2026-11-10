@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block content %}
+<h4>Sửa deadline</h4>
+<form method="post" class="row g-3 col-md-8">
+  <div class="col-md-5">
+    <label class="form-label">Môn học</label>
+    <select name="subject_id" class="form-select" required>
+      {% for s in all_subjects %}
+      <option value="{{ s.id }}" {{ 'selected' if s.id == item.subject_id }}>{{ s.name }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="col-md-7">
+    <label class="form-label">Tiêu đề *</label>
+    <input name="title" class="form-control" value="{{ item.title }}" required>
+  </div>
+  <div class="col-md-3">
+    <label class="form-label">Hạn nộp</label>
+    <input type="date" name="due_date" class="form-control" value="{{ item.due_date.strftime('%Y-%m-%d') }}" required>
+  </div>
+  <div class="col-md-3">
+    <label class="form-label">Số giờ ước tính</label>
+    <input type="number" step="0.5" min="0.5" name="est_hours" class="form-control" value="{{ item.est_hours }}">
+  </div>
+  <div class="col-md-3">
+    <label class="form-label">Ưu tiên</label>
+    <select name="priority" class="form-select">
+      <option value="1" {{ 'selected' if item.priority==1 }}>Thấp</option>
+      <option value="2" {{ 'selected' if item.priority==2 }}>Vừa</option>
+      <option value="3" {{ 'selected' if item.priority==3 }}>Cao</option>
+    </select>
+  </div>
+  <div class="col-12">
+    <button class="btn btn-primary">Lưu</button>
+    <a href="{{ url_for('deadlines') }}" class="btn btn-outline-secondary">Huỷ</a>
+  </div>
+</form>
+{% endblock %}

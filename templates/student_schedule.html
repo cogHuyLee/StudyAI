@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% block title %}Lịch học – StudyAI{% endblock %}
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+  <div class="page-title mb-0"><i class="bi bi-calendar-week"></i> Lịch học</div>
+  <div class="btn-group">
+    <a href="{{ url_for('courses.student_schedule', view='week', week=week_offset) }}"
+       class="btn btn-sm {{ 'btn-primary' if view=='week' else 'btn-outline-primary' }}">Theo tuần</a>
+    <a href="{{ url_for('courses.student_schedule', view='list') }}"
+       class="btn btn-sm {{ 'btn-primary' if view=='list' else 'btn-outline-primary' }}">Danh sách</a>
+  </div>
+</div>
+
+{% if view == 'week' %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <a class="btn btn-outline-secondary btn-sm"
+     href="{{ url_for('courses.student_schedule', view='week', week=week_offset-1) }}">← Tuần trước</a>
+  <div class="fw-medium">
+    Tuần {{ monday.strftime('%d/%m') }} – {{ week_days[6].strftime('%d/%m/%Y') }}
+    {% if week_offset == 0 %}<span class="badge bg-primary ms-1">Hiện tại</span>{% endif %}
+  </div>
+  <a class="btn btn-outline-secondary btn-sm"
+     href="{{ url_for('courses.student_schedule', view='week', week=week_offset+1) }}">Tuần sau →</a>
+</div>
+
+<div class="row g-2">
+  {% for i in range(7) %}
+  {% set d = week_days[i] %}
+  <div class="col-12 col-md">
+    <div class="card h-100 {{ 'border-primary' if d == today else '' }}">
+      <div class="card-header py-2 px-2 text-center small {{ 'bg-primary text-white' if d == today else '' }}">
+        <div class="fw-semibold">{{ week_labels[i] }}</div>
+        <div>{{ d.strftime('%d/%m') }}</div>
+      </div>
+      <div class="card-body p-2">
+        {% set items = week_map.get(d, []) %}
+        {% if items %}
+          {% for s in items %}
+          <div class="mb-2 p-2 rounded" style="background:#f8fafc;border-left:3px solid #4f46e5">
+            <div class="small fw-semibold">{{ s.course.name }}</div>
+            <div class="small text-muted">
+              {% if s.start_time %}{{ s.start_time.strftime('%H:%M') }}{% endif %}
+              {% if s.end_time %}–{{ s.end_time.strftime('%H:%M') }}{% endif %}
+              {% if s.room %} · {{ s.room }}{% endif %}
+            </div>
+            {% if s.topic %}<div class="small">{{ s.topic }}</div>{% endif %}
+          </div>
+          {% endfor %}
+        {% else %}
+          <div class="text-muted small text-center py-3">—</div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+{% else %}
+{# list view #}
+{% if grouped %}
+{% for d, sessions in grouped.items() %}
+<div class="card mb-3">
+  <div class="card-header {{ 'bg-primary text-white' if d == today else '' }}">
+    {{ d.strftime('%d/%m/%Y') }}
+    {% if d == today %}<span class="badge bg-light text-primary ms-1">Hôm nay</span>{% endif %}
+  </div>
+  <ul class="list-group list-group-flush">
+    {% for s in sessions %}
+    <li class="list-group-item d-flex justify-content-between">
+      <span>
+        <b>{{ s.course.name }}</b>
+        {% if s.topic %}<span class="text-muted">– {{ s.topic }}</span>{% endif %}
+        {% if s.room %}<span class="badge bg-light text-dark ms-1">{{ s.room }}</span>{% endif %}
+      </span>
+      <span class="text-nowrap small">
+        {% if s.start_time %}{{ s.start_time.strftime('%H:%M') }}{% endif %}
+        {% if s.end_time %}–{{ s.end_time.strftime('%H:%M') }}{% endif %}
+      </span>
+    </li>
+    {% endfor %}
+  </ul>
+</div>
+{% endfor %}
+{% else %}
+<div class="card card-body empty-state">Chưa có buổi học. Đăng ký lớp hoặc chờ GV thêm lịch.</div>
+{% endif %}
+{% endif %}
+{% endblock %}

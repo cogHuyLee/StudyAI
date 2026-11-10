@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block content %}
+<h4>Sửa môn học</h4>
+<form method="post" class="row g-3 col-md-8">
+  <div class="col-md-6">
+    <label class="form-label">Tên môn *</label>
+    <input name="name" class="form-control" value="{{ item.name }}" required>
+  </div>
+  <div class="col-md-3">
+    <label class="form-label">Mã môn</label>
+    <input name="code" class="form-control" value="{{ item.code or '' }}">
+  </div>
+  <div class="col-md-3">
+    <label class="form-label">Giảng viên</label>
+    <input name="teacher" class="form-control" value="{{ item.teacher or '' }}">
+  </div>
+  <div class="col-md-3">
+    <label class="form-label">Tín chỉ</label>
+    <input name="credits" type="number" min="1" class="form-control" value="{{ item.credits }}">
+  </div>
+  <div class="col-md-3">
+    <label class="form-label">Độ khó</label>
+    <select name="difficulty" class="form-select">
+      {% for i in range(1,6) %}<option value="{{i}}" {{ 'selected' if i==item.difficulty }}>{{i}}</option>{% endfor %}
+    </select>
+  </div>
+  <div class="col-md-3">
+    <label class="form-label">Điểm mục tiêu</label>
+    <input name="target_score" type="number" step="0.1" min="0" max="10" class="form-control" value="{{ item.target_score }}">
+  </div>
+  <div class="col-12">
+    <button class="btn btn-primary">Lưu</button>
+    <a href="{{ url_for('subjects') }}" class="btn btn-outline-secondary">Huỷ</a>
+  </div>
+</form>
+{% endblock %}

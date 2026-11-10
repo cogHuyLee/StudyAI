@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block content %}
+<h4>Thành phần điểm – {{ subject.name }}
+  <small class="text-muted">({{ subject.code or '' }} · {{ subject.credits }} TC)</small>
+</h4>
+<p class="text-muted">Thiết lập trọng số từng cột điểm (TX1, TX2, Giữa kỳ, Cuối kỳ...). Tổng nên bằng <b>100%</b>.</p>
+
+<form method="post" id="compForm">
+  <table class="table bg-white" id="compTable">
+    <thead>
+      <tr><th style="width:40%">Tên thành phần</th><th style="width:25%">Trọng số (%)</th><th></th></tr>
+    </thead>
+    <tbody>
+      {% for c in components %}
+      <tr>
+        <td><input name="name" class="form-control" value="{{ c.name }}" required></td>
+        <td><input name="weight" type="number" step="0.5" min="0" max="100" class="form-control weight-input" value="{{ c.weight }}" required></td>
+        <td><button type="button" class="btn btn-sm btn-outline-danger" onclick="this.closest('tr').remove(); updateTotal()">Xoá</button></td>
+      </tr>
+      {% else %}
+      <tr>
+        <td><input name="name" class="form-control" value="TX1" required></td>
+        <td><input name="weight" type="number" step="0.5" min="0" max="100" class="form-control weight-input" value="20" required></td>
+        <td><button type="button" class="btn btn-sm btn-outline-danger" onclick="this.closest('tr').remove(); updateTotal()">Xoá</button></td>
+      </tr>
+      <tr>
+        <td><input name="name" class="form-control" value="TX2" required></td>
+        <td><input name="weight" type="number" step="0.5" min="0" max="100" class="form-control weight-input" value="20" required></td>
+        <td><button type="button" class="btn btn-sm btn-outline-danger" onclick="this.closest('tr').remove(); updateTotal()">Xoá</button></td>
+      </tr>
+      <tr>
+        <td><input name="name" class="form-control" value="Cuối kỳ" required></td>
+        <td><input name="weight" type="number" step="0.5" min="0" max="100" class="form-control weight-input" value="60" required></td>
+        <td><button type="button" class="btn btn-sm btn-outline-danger" onclick="this.closest('tr').remove(); updateTotal()">Xoá</button></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <p>Tổng trọng số: <b id="totalW">0</b>% <span id="totalHint" class="text-muted"></span></p>
+  <button type="button" class="btn btn-outline-secondary btn-sm" onclick="addRow()">+ Thêm thành phần</button>
+  <button type="submit" class="btn btn-primary">Lưu</button>
+  <a href="{{ url_for('subjects') }}" class="btn btn-outline-secondary">Quay lại</a>
+</form>
+
+<div class="mt-4">
+  <h6>Mẫu nhanh</h6>
+  <button type="button" class="btn btn-sm btn-outline-primary" onclick="applyPreset([['TX1',15],['TX2',15],['Cuối kỳ',70]])">15% + 15% + 70%</button>
+  <button type="button" class="btn btn-sm btn-outline-primary" onclick="applyPreset([['TX1',20],['TX2',20],['Cuối kỳ',60]])">20% + 20% + 60%</button>
+  <button type="button" class="btn btn-sm btn-outline-primary" onclick="applyPreset([['Thường xuyên',30],['Giữa kỳ',30],['Cuối kỳ',40]])">30% + 30% + 40%</button>
+  <button type="button" class="btn btn-sm btn-outline-primary" onclick="applyPreset([['Quá trình',40],['Cuối kỳ',60]])">40% + 60%</button>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+function updateTotal() {
+  let t = 0;
+  document.querySelectorAll('.weight-input').forEach(i => { t += parseFloat(i.value) || 0; });
+  document.getElementById('totalW').textContent = t.toFixed(1);
+  const hint = document.getElementById('totalHint');
+  if (Math.abs(t - 100) < 0.5) { hint.textContent = '✓ Đạt 100%'; hint.className = 'text-success'; }
+  else if (t > 0) { hint.textContent = '(nên = 100%)'; hint.className = 'text-warning'; }
+  else { hint.textContent = ''; }
+}
+function addRow(name='', w='') {
+  const tr = document.createElement('tr');
+  tr.innerHTML = `<td><input name="name" class="form-control" value="${name}" required></td>
+    <td><input name="weight" type="number" step="0.5" min="0" max="100" class="form-control weight-input" value="${w}" required></td>
+    <td><button type="button" class="btn btn-sm btn-outline-danger" onclick="this.closest('tr').remove(); updateTotal()">Xoá</button></td>`;
+  document.querySelector('#compTable tbody').appendChild(tr);
+  tr.querySelector('.weight-input').addEventListener('input', updateTotal);
+  updateTotal();
+}
+function applyPreset(rows) {
+  document.querySelector('#compTable tbody').innerHTML = '';
+  rows.forEach(([n, w]) => addRow(n, w));
+}
+document.querySelectorAll('.weight-input').forEach(i => i.addEventListener('input', updateTotal));
+updateTotal();
+</script>
+{% endblock %}

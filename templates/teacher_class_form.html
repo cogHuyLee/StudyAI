@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Sửa' if course else 'Tạo' }} lớp – StudyAI{% endblock %}
+{% block content %}
+<div class="page-title"><i class="bi bi-plus-circle"></i> {{ 'Sửa lớp học' if course else 'Tạo lớp học mới' }}</div>
+<form method="post" class="card card-body col-lg-8">
+  <div class="row g-3">
+    <div class="col-md-8">
+      <label class="form-label fw-medium">Tên lớp *</label>
+      <input name="name" class="form-control" required value="{{ course.name if course else '' }}">
+    </div>
+    <div class="col-md-4">
+      <label class="form-label fw-medium">Mã lớp</label>
+      <input name="code" class="form-control" value="{{ course.code if course and course.code else '' }}">
+    </div>
+    <div class="col-12">
+      <label class="form-label fw-medium">Mô tả</label>
+      <textarea name="description" class="form-control" rows="3">{{ course.description if course and course.description else '' }}</textarea>
+    </div>
+    <div class="col-md-4">
+      <label class="form-label fw-medium">Học phí (VND)</label>
+      <input name="fee" type="number" min="0" step="1000" class="form-control" value="{{ course.fee if course else 0 }}">
+    </div>
+    <div class="col-md-4">
+      <label class="form-label fw-medium">Số tín chỉ</label>
+      <input name="credits" type="number" min="1" max="15" class="form-control" value="{{ course.credits if course and course.credits else 3 }}">
+    </div>
+    <div class="col-md-4">
+      <label class="form-label fw-medium">Sĩ số tối đa</label>
+      <input name="max_students" type="number" min="1" class="form-control" value="{{ course.max_students if course else 40 }}">
+    </div>
+    <div class="col-md-4">
+      <label class="form-label fw-medium">Trạng thái</label>
+      <select name="status" class="form-select">
+        {% for v,l in [('open','Đang mở'),('closed','Đóng đăng ký'),('ended','Đã kết thúc')] %}
+        <option value="{{v}}" {% if course and course.status==v %}selected{% endif %}>{{l}}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-4">
+      <label class="form-label fw-medium">Ngày bắt đầu</label>
+      <input name="start_date" type="date" class="form-control"
+             value="{{ course.start_date.strftime('%Y-%m-%d') if course and course.start_date else '' }}">
+    </div>
+    <div class="col-md-4">
+      <label class="form-label fw-medium">Ngày kết thúc</label>
+      <input name="end_date" type="date" class="form-control"
+             value="{{ course.end_date.strftime('%Y-%m-%d') if course and course.end_date else '' }}">
+    </div>
+    {% if current_user.is_admin and teachers is defined %}
+    <div class="col-md-4">
+      <label class="form-label fw-medium">Giảng viên</label>
+      <select name="teacher_id" class="form-select">
+        {% for t in teachers %}
+        <option value="{{ t.id }}" {% if course and course.teacher_id==t.id %}selected{% endif %}>
+          {{ t.full_name or t.username }}
+        </option>
+        {% endfor %}
+      </select>
+    </div>
+    {% endif %}
+    <div class="col-12 d-flex gap-2">
+      <button class="btn btn-primary">Lưu</button>
+      <a href="{{ url_for('courses.teacher_classes') }}" class="btn btn-outline-secondary">Huỷ</a>
+    </div>
+  </div>
+</form>
+{% endblock %}

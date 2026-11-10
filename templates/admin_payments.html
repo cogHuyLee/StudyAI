@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}Học phí – Admin{% endblock %}
+{% block content %}
+<div class="page-title"><i class="bi bi-cash-coin"></i> Thu học phí</div>
+<div class="mb-3 d-flex gap-2">
+  <a href="{{ url_for('courses.admin_payments', status='unpaid') }}" class="btn btn-sm {{ 'btn-warning' if status=='unpaid' else 'btn-outline-warning' }}">Chưa thanh toán</a>
+  <a href="{{ url_for('courses.admin_payments', status='paid') }}" class="btn btn-sm {{ 'btn-success' if status=='paid' else 'btn-outline-success' }}">Đã thanh toán</a>
+  <a href="{{ url_for('courses.admin_payments', status='refunded') }}" class="btn btn-sm {{ 'btn-secondary' if status=='refunded' else 'btn-outline-secondary' }}">Hoàn tiền</a>
+</div>
+<div class="card">
+  <div class="table-responsive">
+    <table class="table mb-0 align-middle">
+      <tr><th>Sinh viên</th><th>Lớp</th><th>Số tiền</th><th>TT</th><th>Thao tác</th></tr>
+      {% for e in enrolls %}
+      <tr>
+        <td>
+          <b>{{ e.student.full_name or e.student.username }}</b>
+          <div class="small text-muted">{{ e.student.email }}</div>
+        </td>
+        <td>{{ e.course.name }}</td>
+        <td class="fw-medium">{{ money(e.fee_amount) }}</td>
+        <td><span class="badge {{ 'bg-success' if e.payment_status=='paid' else 'bg-warning text-dark' }}">{{ e.payment_label }}</span></td>
+        <td>
+          {% if e.payment_status != 'paid' %}
+          <form method="post" action="{{ url_for('courses.admin_mark_paid', eid=e.id) }}" class="d-flex flex-wrap gap-1 align-items-center">
+            <input type="number" name="amount" class="form-control form-control-sm" style="width:110px" value="{{ e.fee_amount|int }}" min="0">
+            <select name="method" class="form-select form-select-sm" style="width:auto">
+              <option value="cash">Tiền mặt</option>
+              <option value="transfer">Chuyển khoản</option>
+              <option value="other">Khác</option>
+            </select>
+            <input name="note" class="form-control form-control-sm" style="width:120px" placeholder="Ghi chú">
+            <button class="btn btn-sm btn-success">Thu tiền</button>
+          </form>
+          {% else %}
+          <form method="post" action="{{ url_for('courses.admin_mark_unpaid', eid=e.id) }}">
+            <button class="btn btn-sm btn-outline-secondary">Đánh dấu chưa TT</button>
+          </form>
+          {% endif %}
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="5" class="text-muted text-center py-4">Không có bản ghi</td></tr>
+      {% endfor %}
+    </table>
+  </div>
+</div>
+{% endblock %}

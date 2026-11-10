@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block title %}Thanh toán – StudyAI{% endblock %}
+{% block content %}
+<div class="page-title"><i class="bi bi-wallet2"></i> Ví & Thanh toán học phí</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-md-4">
+    <div class="stat-card success">
+      <div class="label">Số dư ví</div>
+      <div class="value" style="font-size:1.5rem">{{ money(balance) }}</div>
+          </div>
+  </div>
+  <div class="col-md-8">
+    <div class="card card-body">
+      <h6 class="mb-3">1. Nạp tiền vào ví (VNPay)</h6>
+      <form method="post" action="{{ url_for('courses.wallet_topup') }}" class="row g-2 align-items-end">
+        <div class="col-md-4">
+          <label class="form-label small">Số tiền (VND)</label>
+          <input name="amount" type="number" min="10000" step="1000" class="form-control" value="2000000" required>
+        </div>
+        <div class="col-md-4">
+          <button class="btn btn-primary w-100"><i class="bi bi-credit-card me-1"></i>Nạp qua VNPay</button>
+        </div>
+        <div class="col-md-4 small text-muted">Nạp xong dùng số dư để trả học phí bên dưới.</div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<h5 class="mb-3">2. Thanh toán học phí lớp</h5>
+{% if unpaid %}
+<div class="card mb-4">
+  <table class="table mb-0 align-middle">
+    <tr><th>Lớp</th><th>Học phí</th><th>Số dư đủ?</th><th></th></tr>
+    {% for e in unpaid %}
+    {% set fee = e.fee_amount or 0 %}
+    {% set enough = balance >= fee %}
+    <tr>
+      <td>
+        <b>{{ e.course.name }}</b>
+        <div class="small text-muted">{{ e.course.code or '' }}</div>
+      </td>
+      <td class="fw-medium">{{ money(fee) }}</td>
+      <td>
+        {% if enough %}
+          <span class="badge bg-success">Đủ</span>
+        {% else %}
+          <span class="badge bg-warning text-dark">Thiếu {{ money(fee - balance) }}</span>
+        {% endif %}
+      </td>
+      <td>
+        <form method="post" action="{{ url_for('courses.pay_enrollment_wallet', eid=e.id) }}">
+          <button class="btn btn-sm btn-success" {% if not enough %}disabled{% endif %}
+                  onclick="return confirm('Thanh toán {{ money(fee) }} cho lớp này?')">
+            Thanh toán ngay
+          </button>
+        </form>
+      </td>
+    </tr>
+    {% endfor %}
+  </table>
+</div>
+{% else %}
+<div class="alert alert-light border">Không có khoản học phí nào đang chờ. Hãy <a href="{{ url_for('courses.class_list') }}">đăng ký lớp</a> trước.</div>
+{% endif %}
+
+<h5 class="mb-3">Lịch sử giao dịch</h5>
+<div class="card">
+  <table class="table mb-0 table-sm">
+    <tr><th>Thời gian</th><th>Loại</th><th>Số tiền</th><th>TT</th><th>Mô tả</th></tr>
+    {% for t in txns %}
+    <tr>
+      <td class="small">{{ t.created_at.strftime('%d/%m/%Y %H:%M') if t.created_at else '' }}</td>
+      <td class="small">{{ t.kind }}</td>
+      <td class="{{ 'text-success' if t.amount > 0 else 'text-danger' }}">{{ money(t.amount) }}</td>
+      <td><span class="badge {{ 'bg-success' if t.status=='success' else 'bg-warning text-dark' if t.status=='pending' else 'bg-secondary' }}">{{ t.status }}</span></td>
+      <td class="small">{{ t.description or '' }}</td>
+    </tr>
+    {% else %}
+    <tr><td colspan="5" class="text-muted text-center">Chưa có giao dịch</td></tr>
+    {% endfor %}
+  </table>
+</div>
+{% endblock %}

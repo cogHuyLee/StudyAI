@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Điểm danh – StudyAI{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between mb-3">
+  <div>
+    <div class="page-title mb-1"><i class="bi bi-clipboard-check"></i> Điểm danh</div>
+    <div class="text-muted small">
+      {{ course.name }} · Buổi {{ session.session_date.strftime('%d/%m/%Y') }}
+      {% if session.topic %}· {{ session.topic }}{% endif %}
+    </div>
+  </div>
+  <a href="{{ url_for('courses.teacher_class_manage', cid=course.id) }}" class="btn btn-outline-secondary btn-sm">Quay lại</a>
+</div>
+
+<form method="post">
+  <div class="card">
+    <table class="table mb-0 align-middle">
+      <tr><th>Sinh viên</th><th>Trạng thái</th><th>Ghi chú</th></tr>
+      {% for e in enrolls %}
+      {% set att = existing.get(e.student_id) %}
+      <tr>
+        <td>{{ e.student.full_name or e.student.username }}
+          <div class="small text-muted">{{ e.student.email }}</div>
+        </td>
+        <td>
+          <select name="st_{{ e.student_id }}" class="form-select form-select-sm" style="width:auto">
+            {% for v,l in [('present','Có mặt'),('late','Đi muộn'),('absent','Vắng'),('excused','Có phép')] %}
+            <option value="{{v}}" {% if att and att.status==v %}selected{% elif not att and v=='present' %}selected{% endif %}>{{l}}</option>
+            {% endfor %}
+          </select>
+        </td>
+        <td><input name="note_{{ e.student_id }}" class="form-control form-control-sm"
+                   value="{{ att.note if att and att.note else '' }}"></td>
+      </tr>
+      {% else %}
+      <tr><td colspan="3" class="text-muted text-center">Chưa có SV</td></tr>
+      {% endfor %}
+    </table>
+  </div>
+  {% if enrolls %}
+  <button class="btn btn-primary mt-3">Lưu điểm danh</button>
+  {% endif %}
+</form>
+{% endblock %}

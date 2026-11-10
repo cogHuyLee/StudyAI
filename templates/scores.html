@@ -1,0 +1,222 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-title"><i class="bi bi-bar-chart"></i> Kết quả học tập</div>
+
+{# ---- Form nhập điểm ---- #}
+<form method="post" class="row g-2 mb-4" id="scoreForm">
+  <div class="col-md-2">
+    <select name="subject_id" id="subjectSelect" class="form-select" required>
+      {% for s in all_subjects %}<option value="{{ s.id }}">{{ s.name }}</option>{% endfor %}
+    </select>
+  </div>
+  <div class="col-md-2">
+    <select name="component_id" id="componentSelect" class="form-select">
+      <option value="">— Thành phần —</option>
+    </select>
+  </div>
+  <div class="col-md-2"><input name="exam_name" id="examName" class="form-control" placeholder="Tên bài / ghi chú"></div>
+  <div class="col-md-1"><input name="topic" class="form-control" placeholder="Chủ đề"></div>
+  <div class="col-md-1"><input type="number" step="0.1" min="0" name="score" class="form-control" placeholder="Điểm" required></div>
+  <div class="col-md-1"><input type="number" step="0.1" min="1" name="max_score" value="10" class="form-control" title="Thang"></div>
+  <div class="col-md-1"><input type="number" step="0.5" min="0" max="100" name="weight" class="form-control" placeholder="% TS" title="Trọng số thủ công (nếu không chọn thành phần)"></div>
+  <div class="col-md-1"><input type="date" name="taken_at" value="{{ today }}" class="form-control" required></div>
+  <div class="col-md-1"><button class="btn btn-primary w-100">Lưu</button></div>
+</form>
+
+{# ---- Tóm tắt GPA & xếp loại tốt nghiệp ---- #}
+{% if summary %}
+<div class="row g-3 mb-4">
+  <div class="col-md-3">
+    <div class="card border-primary h-100">
+      <div class="card-body">
+        <div class="text-muted small">GPA hệ 4</div>
+        <div class="fs-3 fw-bold text-primary">{{ summary.gpa4 }}</div>
+        <div class="small">Hệ 10 (có TC): {{ summary.gpa10 }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card border-success h-100">
+      <div class="card-body">
+        <div class="text-muted small">Xếp loại hiện tại</div>
+        <div class="fs-4 fw-bold text-success">{{ summary.rank }}</div>
+        <div class="small">{{ summary.n_subjects }} môn · {{ summary.total_credits }} tín chỉ</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card h-100">
+      <div class="card-body">
+        <div class="text-muted small">Dự kiến tốt nghiệp*</div>
+        <div class="fs-5 fw-bold">{{ summary.projected_rank or '—' }}</div>
+        <div class="small">GPA4 ≈ {{ summary.projected_gpa4 or '—' }} · GPA10 ≈ {{ summary.projected_gpa10 or '—' }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card h-100">
+      <div class="card-body">
+        <div class="text-muted small">Mạnh / Yếu</div>
+        <div>⬆ {{ summary.best }}</div>
+        <div>⬇ {{ summary.worst }}</div>
+      </div>
+    </div>
+  </div>
+</div>
+<p class="small text-muted">* Dự kiến: môn chưa có điểm được giả định đạt đúng điểm mục tiêu của môn đó.</p>
+{% endif %}
+
+{# ---- Bảng phân tích theo môn ---- #}
+<div class="card mb-4">
+  <div class="card-header">Điểm tổng kết theo môn (có trọng số thành phần)</div>
+  <div class="table-responsive">
+  <table class="table mb-0">
+    <tr>
+      <th>Môn</th><th>TC</th><th>Thành phần</th><th>Điểm TK</th><th>Chữ</th>
+      <th>Hệ 4</th><th>Xếp loại</th><th>Xu hướng</th><th>Mục tiêu</th><th>Chênh</th>
+    </tr>
+    {% for s in stats %}
+    <tr>
+      <td>
+        <b>{{ s.subject.name }}</b>
+        <a href="{{ url_for('subject_components', sid=s.subject.id) }}" class="small d-block">Cấu hình TS</a>
+      </td>
+      <td>{{ s.subject.credits }}</td>
+      <td class="small">
+        {% if s.breakdown %}
+          {% for b in s.breakdown %}
+            <span class="badge {{ 'bg-primary' if b.has_score else 'bg-secondary' }}"
+                  title="{{ b.exam_name or '' }}">
+              {{ b.name }} {{ b.weight|int }}%
+              {% if b.has_score %}: {{ b.score10 }}{% else %}: —{% endif %}
+            </span>
+          {% endfor %}
+          <span class="text-muted">(Σ{{ s.total_weight|int }}%)</span>
+        {% else %}—{% endif %}
+      </td>
+      <td class="fw-bold">{{ s.avg10 if s.avg10 is not none else '—' }}</td>
+      <td>{{ s.letter }}</td>
+      <td>{{ s.grade_point if s.grade_point is not none else '—' }}</td>
+      <td>{{ s.level }}</td>
+      <td>{% if s.trend=='Tiến bộ' %}📈{% elif s.trend=='Giảm sút' %}📉{% endif %} {{ s.trend }}</td>
+      <td>{{ s.subject.target_score }}</td>
+      <td>
+        {% if s.gap is not none %}
+          <span class="{{ 'text-danger' if s.gap > 0 else 'text-success' }}">{{ '+' if s.gap > 0 }}{{ s.gap }}</span>
+        {% else %}—{% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+  </table>
+  </div>
+</div>
+
+<div class="card mb-4"><div class="card-body"><canvas id="chart" height="90"></canvas></div></div>
+
+<h5>Lịch sử điểm</h5>
+<p class="small text-muted">Mỗi thành phần (TX1, TX2, CK…) chỉ tính <b>1 điểm mới nhất</b> vào tổng kết. Nhập lại cùng thành phần sẽ <b>cập nhật</b> chứ không cộng dồn.</p>
+<table class="table table-sm bg-white">
+  <tr><th>Ngày</th><th>Môn</th><th>Thành phần</th><th>Bài</th><th>Chủ đề</th><th>Điểm</th><th>TS %</th><th></th></tr>
+  {% for h in history %}
+  <tr>
+    <td>{{ h.taken_at.strftime('%d/%m/%Y') }}</td>
+    <td>{{ h.subject.name }}</td>
+    <td>
+      {% if h.component %}
+        {{ h.component.name }}
+        {% if h.id not in latest_component_score_ids %}
+          <span class="badge bg-secondary" title="Không dùng để tính TK (đã có bản mới hơn)">cũ</span>
+        {% endif %}
+      {% else %}—{% endif %}
+    </td>
+    <td>{{ h.exam_name }}</td>
+    <td>{{ h.topic or '' }}</td>
+    <td>{{ h.score }}/{{ h.max_score|int }}</td>
+    <td>{{ h.effective_weight|int if h.effective_weight else (h.weight|int if h.weight else '—') }}</td>
+    <td class="text-nowrap">
+      <a href="{{ url_for('edit_score', sid=h.id) }}" class="btn btn-sm btn-outline-primary">Sửa</a>
+      <form method="post" action="{{ url_for('delete_score', sid=h.id) }}" class="d-inline"
+            onsubmit="return confirm('Xoá điểm này?')">
+        <button class="btn btn-sm btn-link text-danger">Xoá</button>
+      </form>
+    </td>
+  </tr>
+  {% endfor %}
+</table>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+<script>
+const compMap = {{ comp_map | tojson }};
+const subjectSelect = document.getElementById('subjectSelect');
+const componentSelect = document.getElementById('componentSelect');
+const examName = document.getElementById('examName');
+
+function refreshComponents() {
+  const sid = subjectSelect.value;
+  const comps = compMap[sid] || [];
+  componentSelect.innerHTML = '<option value="">— Thành phần —</option>';
+  comps.forEach(c => {
+    const opt = document.createElement('option');
+    opt.value = c.id;
+    opt.textContent = c.name + ' (' + c.weight + '%)';
+    componentSelect.appendChild(opt);
+  });
+}
+componentSelect.addEventListener('change', () => {
+  const opt = componentSelect.selectedOptions[0];
+  if (opt && opt.value && !examName.value) {
+    examName.value = opt.textContent.split(' (')[0];
+  }
+});
+subjectSelect.addEventListener('change', refreshComponents);
+refreshComponents();
+
+const stats = {{ stats | map(attribute='subject.name') | list | tojson }};
+const data = {{ stats | map(attribute='values') | list | tojson }};
+const maxLen = Math.max(0, ...data.map(d => d.length));
+const palette = [
+  '#4f46e5','#0891b2','#059669','#d97706','#dc2626','#7c3aed',
+  '#db2777','#0d9488','#65a30d','#ea580c','#2563eb','#9333ea'
+];
+const datasets = stats.map((n, i) => ({
+  label: n,
+  data: data[i],
+  tension: 0.3,
+  borderColor: palette[i % palette.length],
+  backgroundColor: palette[i % palette.length] + '33',
+  pointBackgroundColor: palette[i % palette.length],
+  pointRadius: 3,
+  borderWidth: 2,
+}));
+new Chart(document.getElementById('chart'), {
+  type: 'line',
+  data: {
+    labels: Array.from({length: maxLen}, (_, i) => 'Lần ' + (i + 1)),
+    datasets: datasets
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: true,
+    scales: {
+      y: { min: 0, max: 10, ticks: { stepSize: 1 } }
+    },
+    plugins: {
+      legend: {
+        position: 'bottom',
+        align: 'start',
+        labels: {
+          boxWidth: 12,
+          boxHeight: 12,
+          padding: 12,
+          usePointStyle: true,
+          pointStyle: 'circle',
+          font: { size: 11 }
+        }
+      }
+    }
+  }
+});
+</script>
+{% endblock %}

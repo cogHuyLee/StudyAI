@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block title %}Tài liệu – StudyAI{% endblock %}
+{% block content %}
+<div class="page-title"><i class="bi bi-folder"></i> Tài liệu học tập</div>
+
+<form method="post" enctype="multipart/form-data" class="card card-body mb-4">
+  <div class="row g-2">
+    <div class="col-md-3">
+      <select name="subject_id" class="form-select">
+        <option value="">— Không gắn môn —</option>
+        {% for s in all_subjects %}<option value="{{ s.id }}">{{ s.name }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="col-md-5">
+      <input type="file" name="file" class="form-control" accept=".txt,.md,.pdf,.docx">
+    </div>
+    <div class="col-md-4">
+      <input name="title" class="form-control" placeholder="Tiêu đề (nếu dán văn bản)">
+    </div>
+    <div class="col-12">
+      <textarea name="text" rows="3" class="form-control" placeholder="…hoặc dán nội dung bài giảng / ghi chú vào đây"></textarea>
+    </div>
+    <div class="col-12">
+      <button class="btn btn-primary"><i class="bi bi-upload me-1"></i>Tải lên & lập chỉ mục</button>
+    </div>
+  </div>
+</form>
+
+{% if items %}
+<div class="card">
+  <div class="table-responsive">
+    <table class="table mb-0 align-middle">
+      <thead>
+        <tr>
+          <th>Tài liệu</th>
+          <th>Môn</th>
+          <th>Số đoạn</th>
+          <th>Ngày tải</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for d in items %}
+        <tr>
+          <td>
+            <a href="{{ url_for('view_document', did=d.id) }}" class="fw-medium text-decoration-none">
+              <i class="bi bi-file-earmark-text me-1 text-primary"></i>{{ d.filename }}
+            </a>
+          </td>
+          <td>{{ d.subject.name if d.subject else '—' }}</td>
+          <td><span class="badge bg-light text-dark">{{ d.chunks|length }}</span></td>
+          <td class="text-muted small">{{ d.uploaded_at.strftime('%d/%m/%Y %H:%M') }}</td>
+          <td class="text-nowrap">
+            <a href="{{ url_for('view_document', did=d.id) }}" class="btn btn-sm btn-outline-primary">Xem</a>
+            <form method="post" action="{{ url_for('delete_document', did=d.id) }}" class="d-inline"
+                  onsubmit="return confirm('Xoá tài liệu này?')">
+              <button class="btn btn-sm btn-outline-danger">Xoá</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% else %}
+<div class="card card-body empty-state">
+  Chưa có tài liệu. Tải file (.txt, .md, .pdf, .docx) hoặc dán nội dung bên trên.
+</div>
+{% endif %}
+{% endblock %}

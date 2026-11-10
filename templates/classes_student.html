@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}Lớp học – StudyAI{% endblock %}
+{% block content %}
+<div class="page-title"><i class="bi bi-people"></i> Lớp học</div>
+
+<h5 class="mb-3">Lớp của tôi</h5>
+{% if my_enrolls %}
+<div class="row g-3 mb-4">
+  {% for e in my_enrolls %}
+  <div class="col-md-4">
+    <div class="card h-100">
+      <div class="card-body">
+        <h6 class="mb-1"><a href="{{ url_for('courses.class_detail', cid=e.course.id) }}">{{ e.course.name }}</a></h6>
+        <div class="small text-muted mb-2">GV: {{ e.course.teacher.full_name or e.course.teacher.username }}</div>
+        <span class="badge {{ 'bg-success' if e.payment_status=='paid' else 'bg-warning text-dark' }}">{{ e.payment_label }}</span>
+        <span class="badge bg-light text-dark">{{ money(e.fee_amount) }}</span>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<p class="text-muted">Bạn chưa đăng ký lớp nào.</p>
+{% endif %}
+
+<h5 class="mb-3">Lớp đang mở đăng ký</h5>
+<div class="row g-3">
+  {% for c in open_courses %}
+  <div class="col-md-4">
+    <div class="card h-100">
+      <div class="card-body d-flex flex-column">
+        <h6>{{ c.name }} {% if c.code %}<small class="text-muted">({{ c.code }})</small>{% endif %}</h6>
+        <div class="small text-muted mb-2">GV: {{ c.teacher.full_name or c.teacher.username }}</div>
+        <p class="small flex-grow-1">{{ (c.description or '')[:120] }}{% if c.description and c.description|length > 120 %}…{% endif %}</p>
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <span class="fw-bold text-primary">{{ money(c.fee) }}</span>
+            <span class="small text-muted ms-1">· còn {{ c.seats_left }} chỗ</span>
+          </div>
+          {% if c.id in enrolled_ids %}
+            <a href="{{ url_for('courses.class_detail', cid=c.id) }}" class="btn btn-sm btn-outline-secondary">Đã đăng ký</a>
+          {% else %}
+            <form method="post" action="{{ url_for('courses.enroll', cid=c.id) }}">
+              <button class="btn btn-sm btn-primary">Đăng ký</button>
+            </form>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+  {% else %}
+  <div class="col-12"><div class="card card-body empty-state">Hiện không có lớp nào đang mở.</div></div>
+  {% endfor %}
+</div>
+{% endblock %}

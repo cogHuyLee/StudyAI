@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}AI Chat – StudyAI{% endblock %}
+{% block content %}
+<div class="page-title"><i class="bi bi-robot"></i> StudyAI Chat</div>
+<p class="text-muted mb-3">Hỏi lịch học, deadline, GPA, điểm cần đạt cuối kỳ, gợi ý ôn tập, hoặc nội dung tài liệu.</p>
+
+<div class="card shadow-sm">
+  <div class="card-body p-3" id="log" style="height:420px;overflow-y:auto;background:#f8fafc"></div>
+  <div class="card-footer bg-white border-0 pb-3">
+    <div class="d-flex flex-wrap gap-2 mb-2" id="suggestions">
+      <button type="button" class="btn btn-sm btn-outline-primary sug">Hôm nay học gì?</button>
+      <button type="button" class="btn btn-sm btn-outline-primary sug">Deadline sắp tới</button>
+      <button type="button" class="btn btn-sm btn-outline-primary sug">GPA của tôi</button>
+      <button type="button" class="btn btn-sm btn-outline-primary sug">Nên ôn gì?</button>
+      <button type="button" class="btn btn-sm btn-outline-primary sug">Kế hoạch hôm nay</button>
+      <button type="button" class="btn btn-sm btn-outline-primary sug">Còn bao nhiêu việc?</button>
+    </div>
+    <div class="input-group">
+      <select id="subject" class="form-select" style="max-width:200px">
+        <option value="">Tất cả tài liệu</option>
+        {% for s in all_subjects %}<option value="{{ s.id }}">{{ s.name }}</option>{% endfor %}
+      </select>
+      <input id="q" class="form-control" placeholder="Nhập câu hỏi tự nhiên…" autofocus>
+      <button id="send" class="btn btn-primary px-4"><i class="bi bi-send"></i></button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+const log = document.getElementById('log'), q = document.getElementById('q');
+function add(text, who, sources) {
+  const d = document.createElement('div');
+  d.className = 'mb-3 d-flex ' + (who === 'me' ? 'justify-content-end' : '');
+  const b = document.createElement('div');
+  b.className = who === 'me' ? 'chat-bubble-me' : 'chat-bubble-bot';
+  b.style.whiteSpace = 'pre-wrap';
+  // simple markdown-ish bold
+  b.innerHTML = text
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/\*\*(.+?)\*\*/g, '<b>$1</b>')
+    .replace(/\n/g, '<br>');
+  if (sources && sources.length) {
+    const s = document.createElement('div');
+    s.className = 'small mt-2 opacity-75';
+    s.textContent = '📎 ' + sources.join(', ');
+    b.appendChild(s);
+  }
+  d.appendChild(b); log.appendChild(d); log.scrollTop = log.scrollHeight;
+}
+async function send(text) {
+  const question = (text || q.value).trim(); if (!question) return;
+  add(question, 'me'); q.value = '';
+  const res = await fetch('{{ url_for("api_chat") }}', {
+    method: 'POST', headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({question, subject_id: document.getElementById('subject').value || null})
+  });
+  const data = await res.json();
+  add(data.answer, 'bot', data.sources);
+}
+document.getElementById('send').onclick = () => send();
+q.addEventListener('keydown', e => { if (e.key === 'Enter') send(); });
+document.querySelectorAll('.sug').forEach(btn => btn.onclick = () => send(btn.textContent));
+add('Xin chào! Mình là **StudyAI**. Bạn muốn hỏi gì về lịch học, điểm, deadline hay tài liệu?', 'bot');
+</script>
+{% endblock %}

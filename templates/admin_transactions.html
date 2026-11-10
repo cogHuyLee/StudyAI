@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Giao dịch – Admin{% endblock %}
+{% block content %}
+<div class="page-title"><i class="bi bi-receipt"></i> Lịch sử giao dịch</div>
+<div class="row g-3 mb-3">
+  <div class="col-md-4"><div class="stat-card success"><div class="label">Tổng nạp (SV)</div><div class="value" style="font-size:1.3rem">{{ money(sum_topup) }}</div></div></div>
+  <div class="col-md-4"><div class="stat-card warning"><div class="label">Tổng rút (GV)</div><div class="value" style="font-size:1.3rem">{{ money(sum_withdraw) }}</div></div></div>
+</div>
+<div class="mb-3 d-flex flex-wrap gap-2">
+  <a href="{{ url_for('courses.admin_transactions') }}" class="btn btn-sm {{ 'btn-primary' if not kind else 'btn-outline-primary' }}">Tất cả</a>
+  <a href="{{ url_for('courses.admin_transactions', kind='topup') }}" class="btn btn-sm {{ 'btn-primary' if kind=='topup' else 'btn-outline-primary' }}">Nạp tiền</a>
+  <a href="{{ url_for('courses.admin_transactions', kind='pay_course') }}" class="btn btn-sm {{ 'btn-primary' if kind=='pay_course' else 'btn-outline-primary' }}">Trả học phí</a>
+  <a href="{{ url_for('courses.admin_transactions', kind='withdraw') }}" class="btn btn-sm {{ 'btn-primary' if kind=='withdraw' else 'btn-outline-primary' }}">Rút GV</a>
+</div>
+<div class="card">
+  <div class="table-responsive">
+    <table class="table mb-0 table-sm align-middle">
+      <tr><th>Thời gian</th><th>User</th><th>Role</th><th>Loại</th><th>Số tiền</th><th>TT</th><th>Mã</th><th>Mô tả</th></tr>
+      {% for t in txns %}
+      <tr>
+        <td class="small">{{ t.created_at.strftime('%d/%m/%Y %H:%M') if t.created_at else '' }}</td>
+        <td>{{ t.user.full_name or t.user.username if t.user else '—' }}</td>
+        <td class="small">{{ t.user.role_label if t.user else '' }}</td>
+        <td><span class="badge bg-light text-dark">{{ t.kind }}</span></td>
+        <td class="{{ 'text-success' if t.amount > 0 else 'text-danger' }}">{{ money(t.amount) }}</td>
+        <td>{{ t.status }}</td>
+        <td class="small"><code>{{ t.txn_ref }}</code></td>
+        <td class="small">{{ t.description or '' }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="8" class="text-muted text-center py-4">Chưa có giao dịch</td></tr>
+      {% endfor %}
+    </table>
+  </div>
+</div>
+{% endblock %}

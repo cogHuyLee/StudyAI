@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block title %}Sửa hồ sơ – StudyAI{% endblock %}
+{% block content %}
+<div class="page-title"><i class="bi bi-pencil-square"></i> Sửa hồ sơ</div>
+
+<form method="post" enctype="multipart/form-data" class="card card-body">
+  <div class="row g-3">
+    <div class="col-12">
+      <label class="form-label fw-medium">Ảnh đại diện</label>
+      <div class="d-flex align-items-center gap-3">
+        {% if user.avatar %}
+        <img src="{{ url_for('serve_avatar', filename=user.avatar) }}" style="width:64px;height:64px;border-radius:50%;object-fit:cover">
+        {% endif %}
+        <input type="file" name="avatar" class="form-control" accept="image/*">
+      </div>
+      <div class="form-text">jpg, png, gif, webp</div>
+    </div>
+    <div class="col-md-6">
+      <label class="form-label fw-medium">Họ và tên</label>
+      <input name="full_name" class="form-control" value="{{ user.full_name or '' }}">
+    </div>
+    <div class="col-md-6">
+      <label class="form-label fw-medium">Email *</label>
+      <input name="email" type="email" class="form-control" value="{{ user.email }}" required>
+    </div>
+    <div class="col-md-4">
+      <label class="form-label fw-medium">Số điện thoại</label>
+      <input name="phone" class="form-control" value="{{ user.phone or '' }}" placeholder="09xx...">
+    </div>
+    <div class="col-md-4">
+      <label class="form-label fw-medium">Ngày sinh</label>
+      <input name="birth_date" type="date" class="form-control"
+             value="{{ user.birth_date.strftime('%Y-%m-%d') if user.birth_date else '' }}">
+    </div>
+    <div class="col-md-4">
+      <label class="form-label fw-medium">MSSV</label>
+      <input name="student_id" class="form-control" value="{{ user.student_id or '' }}">
+    </div>
+    <div class="col-md-6">
+      <label class="form-label fw-medium">Trường</label>
+      <input name="school" class="form-control" value="{{ user.school or '' }}">
+    </div>
+    <div class="col-md-3">
+      <label class="form-label fw-medium">Ngành / chuyên ngành</label>
+      <input name="major" class="form-control" value="{{ user.major or '' }}">
+    </div>
+    <div class="col-md-3">
+      <label class="form-label fw-medium">Lớp</label>
+      <input name="class_name" class="form-control" value="{{ user.class_name or '' }}">
+    </div>
+    <div class="col-12">
+      <label class="form-label fw-medium">Địa chỉ</label>
+      <input name="address" class="form-control" value="{{ user.address or '' }}">
+    </div>
+    <div class="col-12">
+      <label class="form-label fw-medium">Giới thiệu ngắn</label>
+      <textarea name="bio" class="form-control" rows="2" maxlength="300">{{ user.bio or '' }}</textarea>
+    </div>
+    <div class="col-12 d-flex flex-wrap gap-2">
+      <button class="btn btn-primary">Lưu thay đổi</button>
+      <a href="{{ url_for('profile') }}" class="btn btn-outline-secondary">Huỷ</a>
+      <a href="{{ url_for('change_password') }}" class="btn btn-outline-warning ms-auto">
+        <i class="bi bi-key me-1"></i>Đổi mật khẩu
+      </a>
+    </div>
+  </div>
+</form>
+{% endblock %}

@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block content %}
+<h4>Sửa điểm</h4>
+<form method="post" class="row g-3 col-md-10">
+  <div class="col-md-4">
+    <label class="form-label">Môn học</label>
+    <select name="subject_id" class="form-select" required>
+      {% for s in all_subjects %}
+      <option value="{{ s.id }}" {{ 'selected' if s.id == item.subject_id }}>{{ s.name }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="col-md-4">
+    <label class="form-label">Thành phần điểm</label>
+    <select name="component_id" class="form-select">
+      <option value="">— Không chọn —</option>
+      {% for c in components %}
+      <option value="{{ c.id }}" {{ 'selected' if item.component_id == c.id }}>{{ c.name }} ({{ c.weight }}%)</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="col-md-4">
+    <label class="form-label">Tên bài / ghi chú</label>
+    <input name="exam_name" class="form-control" value="{{ item.exam_name }}" required>
+  </div>
+  <div class="col-md-3">
+    <label class="form-label">Chủ đề</label>
+    <input name="topic" class="form-control" value="{{ item.topic or '' }}">
+  </div>
+  <div class="col-md-2">
+    <label class="form-label">Điểm</label>
+    <input type="number" step="0.1" min="0" name="score" class="form-control" value="{{ item.score }}" required>
+  </div>
+  <div class="col-md-2">
+    <label class="form-label">Thang điểm</label>
+    <input type="number" step="0.1" min="1" name="max_score" class="form-control" value="{{ item.max_score }}">
+  </div>
+  <div class="col-md-2">
+    <label class="form-label">Trọng số thủ công %</label>
+    <input type="number" step="0.5" min="0" max="100" name="weight" class="form-control" value="{{ item.weight or '' }}" placeholder="Nếu không dùng thành phần">
+  </div>
+  <div class="col-md-3">
+    <label class="form-label">Ngày làm bài</label>
+    <input type="date" name="taken_at" class="form-control" value="{{ item.taken_at.strftime('%Y-%m-%d') }}" required>
+  </div>
+  <div class="col-12">
+    <button class="btn btn-primary">Lưu</button>
+    <a href="{{ url_for('scores') }}" class="btn btn-outline-secondary">Huỷ</a>
+  </div>
+</form>
+{% endblock %}

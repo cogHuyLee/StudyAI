@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+{% block title %}Điểm lớp {{ course.name }} – StudyAI{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between mb-3">
+  <div class="page-title mb-0"><i class="bi bi-pencil-square"></i> Nhập điểm – {{ course.name }}</div>
+  <a href="{{ url_for('courses.teacher_class_manage', cid=course.id) }}" class="btn btn-outline-secondary btn-sm">Quay lại lớp</a>
+</div>
+
+<div class="card card-body mb-4" id="gradeFormCard">
+  <form method="post" class="row g-2 align-items-end" id="gradeForm">
+    <div class="col-md-3">
+      <label class="form-label small">Sinh viên</label>
+      <select name="student_id" class="form-select" required id="selStudent">
+        {% for e in enrolls %}
+        <option value="{{ e.student_id }}"
+          {% if edit.student_id == e.student_id %}selected{% endif %}>
+          {{ e.student.full_name or e.student.username }}
+        </option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-2">
+      <label class="form-label small">Cột điểm</label>
+      <select name="title" class="form-select" required id="gradeTitle">
+        <option value="TX1" {% if edit.title=='TX1' %}selected{% endif %}>TX1</option>
+        <option value="TX2" {% if edit.title=='TX2' %}selected{% endif %}>TX2</option>
+        <option value="Thi" {% if edit.title=='Thi' %}selected{% endif %}>Thi</option>
+      </select>
+    </div>
+    <div class="col-md-1">
+      <label class="form-label small">Điểm</label>
+      <input name="score" type="number" step="0.1" min="0" max="10" class="form-control" required
+             value="{{ edit.score }}" id="gradeScore">
+    </div>
+    <div class="col-md-1">
+      <label class="form-label small">Thang</label>
+      <input name="max_score" type="number" step="0.1" value="{{ edit.max_score or 10 }}" class="form-control">
+    </div>
+    <div class="col-md-2">
+      <label class="form-label small">Trọng số %</label>
+      <select name="weight" class="form-select" id="gradeWeight">
+        {% for w in [20,30,40,50,60] %}
+        <option value="{{ w }}"
+          {% if edit.weight and edit.weight|int == w %}selected
+          {% elif not edit.weight and w == 20 %}selected{% endif %}>{{ w }}%</option>
+        {% endfor %}
+      </select>
+      <div class="form-text" style="font-size:.7rem">Thi = 100 − TX1 − TX2 (tự tính)</div>
+    </div>
+    <div class="col-md-2">
+      <label class="form-label small">Ngày</label>
+      <input name="taken_at" type="date" class="form-control"
+             value="{{ edit.taken_at or today }}">
+    </div>
+    <div class="col-md-1">
+      <button class="btn btn-primary w-100">Lưu</button>
+    </div>
+  </form>
+  <p class="small text-muted mb-0 mt-2">
+    Bắt buộc nhập <b>TX1</b> và <b>TX2</b> trước, sau đó mới nhập <b>Thi</b>.
+    Tổng trọng số 3 cột luôn = <b>100%</b> (Thi nhận phần còn lại).
+  </p>
+</div>
+
+{% for sid, row in by_student.items() %}
+<div class="card mb-3">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <span>
+      <a href="{{ url_for('courses.teacher_student_detail', cid=course.id, sid=sid) }}" class="fw-semibold text-decoration-none">
+        {{ row.student.full_name or row.student.username }}
+      </a>
+      <small class="text-muted">{{ row.student.email }}</small>
+    </span>
+    <span>TB: <b>{{ row.avg if row.avg is not none else '—' }}</b></span>
+  </div>
+  {% if row.grades %}
+  <table class="table mb-0 table-sm align-middle">
+    <tr><th>Cột</th><th>Điểm</th><th>TS%</th><th>Ngày</th><th></th></tr>
+    {% for g in row.grades|sort(attribute='title') %}
+    <tr>
+      <td><b>{{ g.title }}</b></td>
+      <td>{{ g.score }}/{{ g.max_score|int }}</td>
+      <td>{{ g.weight|int }}%</td>
+      <td class="small">{{ g.taken_at.strftime('%d/%m/%Y') if g.taken_at else '' }}</td>
+      <td class="text-nowrap">
+        <a class="btn btn-sm btn-outline-primary"
+           href="{{ url_for('courses.teacher_grades', cid=course.id,
+             student_id=sid, title=g.title, score=g.score,
+             weight=g.weight|int, max_score=g.max_score,
+             taken_at=g.taken_at.strftime('%Y-%m-%d') if g.taken_at else '') }}#gradeFormCard">
+          Sửa
+        </a>
+        <form method="post" class="d-inline">
+          <input type="hidden" name="action" value="delete_grade">
+          <input type="hidden" name="grade_id" value="{{ g.id }}">
+          <button class="btn btn-sm btn-link text-danger" onclick="return confirm('Xoá điểm {{ g.title }}?')">Xoá</button>
+        </form>
+      </td>
+    </tr>
+    {% endfor %}
+  </table>
+  {% else %}
+  <div class="card-body text-muted small">Chưa có điểm —
+    <a href="{{ url_for('courses.teacher_grades', cid=course.id, student_id=sid) }}#gradeFormCard">nhập TX1</a>
+  </div>
+  {% endif %}
+</div>
+{% else %}
+<div class="card card-body empty-state">Chưa có sinh viên trong lớp.</div>
+{% endfor %}
+
+{% if edit.student_id %}
+<script>
+  document.getElementById('gradeFormCard').scrollIntoView({behavior:'smooth', block:'start'});
+  document.getElementById('gradeScore').focus();
+</script>
+{% endif %}
+{% endblock %}

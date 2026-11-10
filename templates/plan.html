@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-title"><i class="bi bi-list-check"></i> Kế hoạch học tập tự động</div>
+<form method="post" action="{{ url_for('generate_plan') }}" class="row g-2 mb-4 align-items-end">
+  <div class="col-auto"><label class="form-label mb-0">Giờ tự học/ngày</label><input type="number" step="0.5" min="1" max="12" name="daily_hours" value="4" class="form-control"></div>
+  <div class="col-auto"><label class="form-label mb-0">Số ngày lập kế hoạch</label><input type="number" min="3" max="30" name="horizon" value="14" class="form-control"></div>
+  <div class="col-auto"><button class="btn btn-primary">⚙️ Lập / lập lại kế hoạch</button></div>
+</form>
+{% for d, items in grouped.items() %}
+<div class="card mb-2"><div class="card-header {{ 'bg-primary text-white' if d == today }}">{{ WEEKDAYS[d.weekday()] }}, {{ d.strftime('%d/%m/%Y') }} · {{ items|sum(attribute='hours') }}h</div>
+  <ul class="list-group list-group-flush">
+  {% for p in items %}<li class="list-group-item d-flex justify-content-between">
+    <span class="{{ 'text-decoration-line-through text-muted' if p.done }}">
+      <span class="badge {{ 'bg-info text-dark' if p.kind=='review' else 'bg-warning text-dark' }}">{{ 'Ôn tập' if p.kind=='review' else 'Deadline' }}</span>
+      <b>{{ p.subject.name }}</b> – {{ p.note }} · {{ p.hours }}h</span>
+    <form method="post" action="{{ url_for('toggle_plan', pid=p.id) }}"><button class="btn btn-sm btn-outline-success">{{ '↩' if p.done else '✓' }}</button></form></li>{% endfor %}
+  </ul></div>
+{% else %}<p class="text-muted">Chưa có kế hoạch. Hãy thêm deadline rồi bấm "Lập kế hoạch".</p>{% endfor %}
+{% endblock %}

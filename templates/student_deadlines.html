@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}Deadline – StudyAI{% endblock %}
+{% block content %}
+<div class="page-title"><i class="bi bi-alarm"></i> Deadline / Bài tập lớp</div>
+<p class="text-muted">Tổng hợp bài tập, kiểm tra từ các lớp bạn đã đăng ký.</p>
+{% if items %}
+<div class="card">
+  <table class="table mb-0 align-middle">
+    <tr><th>Lớp</th><th>Loại</th><th>Tiêu đề</th><th>Hạn</th><th>Còn</th></tr>
+    {% for a in items %}
+    <tr>
+      <td>{{ a.course.name }}</td>
+      <td><span class="badge bg-light text-dark">{{ {'homework':'Bài tập','quiz':'Kiểm tra','exam':'Thi'}.get(a.kind, a.kind) }}</span></td>
+      <td>
+        <b>{{ a.title }}</b>
+        {% if a.description %}<div class="small text-muted">{{ a.description[:100] }}{% if a.description|length>100 %}…{% endif %}</div>{% endif %}
+      </td>
+      <td>{% if a.due_date %}{{ a.due_date.strftime('%d/%m/%Y') }}{% else %}—{% endif %}</td>
+      <td>
+        {% if a.due_date %}
+          {% set left = (a.due_date - today).days %}
+          <span class="badge {{ 'bg-danger' if left < 0 else 'bg-warning text-dark' if left <= 3 else 'bg-secondary' }}">
+            {% if left < 0 %}Quá hạn {{ -left }} ngày{% else %}{{ left }} ngày{% endif %}
+          </span>
+        {% else %}—{% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+  </table>
+</div>
+{% else %}
+<div class="card card-body empty-state">Chưa có deadline nào từ các lớp đã đăng ký.</div>
+{% endif %}
+{% endblock %}

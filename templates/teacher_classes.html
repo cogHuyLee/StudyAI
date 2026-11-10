@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Lớp của tôi – StudyAI{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <div class="page-title mb-0"><i class="bi bi-people"></i> Lớp học {% if current_user.is_admin %}(Admin){% else %}của tôi{% endif %}</div>
+  <a href="{{ url_for('courses.teacher_class_new') }}" class="btn btn-primary"><i class="bi bi-plus-lg"></i> Tạo lớp</a>
+</div>
+<div class="card">
+  <div class="table-responsive">
+    <table class="table mb-0 align-middle">
+      <thead><tr>
+        <th>Lớp</th><th>GV</th><th>Học phí</th><th>Sĩ số</th><th>Đã thu</th><th>TT</th><th></th>
+      </tr></thead>
+      <tbody>
+      {% for c in courses %}
+        <tr>
+          <td><a href="{{ url_for('courses.teacher_class_manage', cid=c.id) }}" class="fw-medium">{{ c.name }}</a>
+            <div class="small text-muted">{{ c.code or '' }}</div></td>
+          <td class="small">{{ c.teacher.full_name or c.teacher.username }}</td>
+          <td>{{ money(c.fee) }}</td>
+          <td>{{ c.student_count }}/{{ c.max_students }}</td>
+          <td>{{ money(c.revenue) }}</td>
+          <td><span class="badge {{ 'bg-success' if c.status=='open' else 'bg-secondary' if c.status=='ended' else 'bg-warning text-dark' }}">{{ c.status_label }}</span></td>
+          <td class="text-nowrap">
+            <a href="{{ url_for('courses.teacher_class_manage', cid=c.id) }}" class="btn btn-sm btn-outline-primary">Quản lý</a>
+            <a href="{{ url_for('courses.teacher_class_edit', cid=c.id) }}" class="btn btn-sm btn-outline-secondary">Sửa</a>
+            {% if c.status != 'ended' %}
+            <form method="post" action="{{ url_for('courses.teacher_class_end', cid=c.id) }}" class="d-inline"
+                  onsubmit="return confirm('Kết thúc lớp này?')">
+              <button class="btn btn-sm btn-outline-warning">Kết thúc</button>
+            </form>
+            {% endif %}
+            <form method="post" action="{{ url_for('courses.teacher_class_delete', cid=c.id) }}" class="d-inline"
+                  onsubmit="return confirm('Xoá vĩnh viễn lớp này?')">
+              <button class="btn btn-sm btn-outline-danger">Xoá</button>
+            </form>
+          </td>
+        </tr>
+      {% else %}
+        <tr><td colspan="7" class="text-muted text-center py-4">Chưa có lớp nào. Hãy tạo lớp mới.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

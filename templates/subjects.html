@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-title"><i class="bi bi-journal-bookmark"></i> Quản lý môn học</div>
+<form method="post" class="row g-2 mb-4">
+  <div class="col-md-3"><input name="name" class="form-control" placeholder="Tên môn *" required></div>
+  <div class="col-md-1"><input name="code" class="form-control" placeholder="Mã"></div>
+  <div class="col-md-2"><input name="teacher" class="form-control" placeholder="Giảng viên"></div>
+  <div class="col-md-1"><input name="credits" type="number" min="1" value="3" class="form-control" title="Tín chỉ"></div>
+  <div class="col-md-2"><select name="difficulty" class="form-select" title="Độ khó">{% for i in range(1,6) %}<option value="{{i}}" {{ 'selected' if i==3 }}>Độ khó {{i}}</option>{% endfor %}</select></div>
+  <div class="col-md-1"><input name="target_score" type="number" step="0.1" min="0" max="10" value="8" class="form-control" title="Điểm mục tiêu"></div>
+  <div class="col-md-2"><button class="btn btn-primary w-100">Thêm</button></div>
+</form>
+<table class="table table-striped bg-white">
+  <tr><th>Môn</th><th>Mã</th><th>Giảng viên</th><th>TC</th><th>Độ khó</th><th>Mục tiêu</th><th>Thành phần điểm</th><th></th></tr>
+  {% for s in items %}
+  <tr>
+    <td>{{ s.name }}</td><td>{{ s.code }}</td><td>{{ s.teacher }}</td><td>{{ s.credits }}</td>
+    <td>{{ s.difficulty }}/5</td><td>{{ s.target_score }}</td>
+    <td>
+      {% if s.components %}
+        <small>{% for c in s.components %}{{ c.name }} {{ c.weight|int }}%{% if not loop.last %} · {% endif %}{% endfor %}</small>
+      {% else %}
+        <span class="text-muted">Chưa cấu hình</span>
+      {% endif %}
+      <a href="{{ url_for('subject_components', sid=s.id) }}" class="btn btn-sm btn-outline-secondary ms-1">Cấu hình</a>
+    </td>
+    <td class="text-nowrap">
+      <a href="{{ url_for('edit_subject', sid=s.id) }}" class="btn btn-sm btn-outline-primary">Sửa</a>
+      <form method="post" action="{{ url_for('delete_subject', sid=s.id) }}" class="d-inline"
+            onsubmit="return confirm('Xoá môn này và toàn bộ dữ liệu liên quan?')">
+        <button class="btn btn-sm btn-outline-danger">Xoá</button>
+      </form>
+    </td>
+  </tr>
+  {% endfor %}
+</table>
+{% endblock %}

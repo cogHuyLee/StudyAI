@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+{% block title %}Quản lý {{ course.name }} – StudyAI{% endblock %}
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
+  <div>
+    <div class="page-title mb-1"><i class="bi bi-gear"></i> {{ course.name }}</div>
+    <div class="small text-muted">
+      {{ course.status_label }} · {{ course.student_count }}/{{ course.max_students }} SV ·
+      Học phí {{ money(course.fee) }} · Đã thu {{ money(course.revenue) }}
+    </div>
+  </div>
+  <div class="d-flex gap-2">
+    <a href="{{ url_for('courses.teacher_grades', cid=course.id) }}" class="btn btn-sm btn-primary">Nhập điểm</a>
+    <a href="{{ url_for('courses.teacher_class_edit', cid=course.id) }}" class="btn btn-sm btn-outline-primary">Sửa lớp</a>
+    <a href="{{ url_for('courses.class_detail', cid=course.id) }}" class="btn btn-sm btn-outline-secondary">Xem như SV</a>
+    <a href="{{ url_for('courses.teacher_classes') }}" class="btn btn-sm btn-outline-secondary">Danh sách</a>
+  </div>
+</div>
+
+{# Sinh viên #}
+<div class="card mb-4">
+  <div class="card-header">Sinh viên đăng ký ({{ enrolls|length }})</div>
+  <div class="table-responsive">
+    <table class="table mb-0 table-sm align-middle">
+      <tr><th>Họ tên</th><th>Email</th><th>Học phí</th><th>TT thanh toán</th><th>Ngày ĐK</th></tr>
+      {% for e in enrolls %}
+      <tr>
+        <td>
+          <a href="{{ url_for('courses.teacher_student_detail', cid=course.id, sid=e.student_id) }}">
+            {{ e.student.full_name or e.student.username }}
+          </a>
+        </td>
+        <td class="small">{{ e.student.email }}</td>
+        <td>{{ money(e.fee_amount) }}</td>
+        <td><span class="badge {{ 'bg-success' if e.payment_status=='paid' else 'bg-warning text-dark' }}">{{ e.payment_label }}</span></td>
+        <td class="small">{{ e.enrolled_at.strftime('%d/%m/%Y') if e.enrolled_at else '' }}</td>
+      </tr>
+      {% else %}<tr><td colspan="5" class="text-muted text-center">Chưa có sinh viên</td></tr>{% endfor %}
+    </table>
+  </div>
+</div>
+
+<div class="row g-3">
+  {# Buổi học #}
+  <div class="col-lg-4">
+    <div class="card h-100">
+      <div class="card-header">Buổi học</div>
+      <div class="card-body">
+        <form method="post" action="{{ url_for('courses.add_session', cid=course.id) }}" class="row g-2 mb-3">
+          <div class="col-12"><input type="date" name="session_date" class="form-control form-control-sm" required></div>
+          <div class="col-6"><input type="time" name="start_time" class="form-control form-control-sm"></div>
+          <div class="col-6"><input type="time" name="end_time" class="form-control form-control-sm"></div>
+          <div class="col-6"><input name="room" class="form-control form-control-sm" placeholder="Phòng"></div>
+          <div class="col-6"><input name="topic" class="form-control form-control-sm" placeholder="Chủ đề"></div>
+          <div class="col-12"><button class="btn btn-sm btn-primary w-100">+ Buổi học</button></div>
+        </form>
+        <ul class="list-group list-group-flush">
+          {% for s in course.sessions %}
+          <li class="list-group-item px-0 d-flex justify-content-between">
+            <span class="small"><b>{{ s.session_date.strftime('%d/%m') }}</b> {{ s.topic or '' }} {{ s.room or '' }}</span>
+            <span class="text-nowrap">
+              <a href="{{ url_for('courses.session_attendance', sid=s.id) }}" class="btn btn-sm btn-link p-0">Điểm danh</a>
+              <form method="post" action="{{ url_for('courses.delete_session', sid=s.id) }}" class="d-inline">
+                <button class="btn btn-sm btn-link text-danger p-0">✕</button>
+              </form>
+            </span>
+          </li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  {# Tài liệu #}
+  <div class="col-lg-4">
+    <div class="card h-100">
+      <div class="card-header">Tài liệu</div>
+      <div class="card-body">
+        <form method="post" action="{{ url_for('courses.add_material', cid=course.id) }}"
+              enctype="multipart/form-data" class="mb-3">
+          <input name="title" class="form-control form-control-sm mb-2" placeholder="Tiêu đề">
+          <input type="file" name="file" class="form-control form-control-sm mb-2">
+          <textarea name="content" class="form-control form-control-sm mb-2" rows="2" placeholder="Mô tả / link (tuỳ chọn)"></textarea>
+          <button class="btn btn-sm btn-primary w-100">+ Tài liệu</button>
+        </form>
+        <ul class="list-group list-group-flush">
+          {% for m in course.materials %}
+          <li class="list-group-item px-0 d-flex justify-content-between align-items-start gap-2">
+            <span class="small">
+              <b>{{ m.title }}</b>
+              {% if m.filename %}
+              <a href="{{ url_for('courses.download_material', mid=m.id) }}" class="d-block">Tải file</a>
+              {% endif %}
+            </span>
+            <form method="post" action="{{ url_for('courses.delete_material', mid=m.id) }}">
+              <button class="btn btn-sm btn-link text-danger p-0">✕</button>
+            </form>
+          </li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  {# Bài tập / KT #}
+  <div class="col-lg-4">
+    <div class="card h-100">
+      <div class="card-header">Bài tập / Kiểm tra</div>
+      <div class="card-body">
+        <form method="post" action="{{ url_for('courses.add_assignment', cid=course.id) }}" class="row g-2 mb-3">
+          <div class="col-12"><input name="title" class="form-control form-control-sm" placeholder="Tiêu đề *" required></div>
+          <div class="col-6">
+            <select name="kind" class="form-select form-select-sm">
+              <option value="homework">Bài tập</option>
+              <option value="quiz">Kiểm tra</option>
+              <option value="exam">Thi</option>
+            </select>
+          </div>
+          <div class="col-6"><input type="date" name="due_date" class="form-control form-control-sm"></div>
+          <div class="col-12"><textarea name="description" class="form-control form-control-sm" rows="2" placeholder="Mô tả"></textarea></div>
+          <div class="col-12"><button class="btn btn-sm btn-primary w-100">+ Thêm</button></div>
+        </form>
+        <ul class="list-group list-group-flush">
+          {% for a in course.assignments %}
+          <li class="list-group-item px-0 d-flex justify-content-between">
+            <span class="small">
+              <span class="badge bg-light text-dark">{{ {'homework':'BT','quiz':'KT','exam':'Thi'}.get(a.kind,a.kind) }}</span>
+              {{ a.title }}
+              {% if a.due_date %}<span class="text-muted">· {{ a.due_date.strftime('%d/%m') }}</span>{% endif %}
+            </span>
+            <form method="post" action="{{ url_for('courses.delete_assignment', aid=a.id) }}">
+              <button class="btn btn-sm btn-link text-danger p-0">✕</button>
+            </form>
+          </li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

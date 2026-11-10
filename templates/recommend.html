@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-title"><i class="bi bi-lightbulb"></i> 🧠 Gợi ý nội dung cần ôn tập</div>
+<form class="row g-2 mb-3" method="get">
+  <div class="col-md-4"><select name="subject_id" class="form-select" onchange="this.form.submit()">
+    <option value="">Tất cả môn</option>
+    {% for s in all_subjects %}<option value="{{ s.id }}" {{ 'selected' if selected == s.id }}>{{ s.name }}</option>{% endfor %}
+  </select></div>
+</form>
+{% for r in recs %}
+<div class="card mb-3"><div class="card-body">
+  <h5 class="card-title">{{ r.subject.name }} – {{ r.topic }}
+    <span class="badge bg-danger">{{ r.level }}</span> <span class="badge bg-info text-dark">Đề xuất ~{{ r.hours }}h</span></h5>
+  <p class="mb-2">{{ r.reason }}</p>
+  {% if r.material %}<div class="border-start border-3 ps-3 text-muted"><small>📖 Từ tài liệu <b>{{ r.material.source }}</b>:<br>{{ r.material.text[:350] }}…</small></div>{% endif %}
+</div></div>
+{% else %}<div class="alert alert-success">Chưa phát hiện chủ đề yếu. Hãy nhập thêm điểm kiểm tra (kèm chủ đề) để có gợi ý chính xác hơn.</div>{% endfor %}
+{% endblock %}

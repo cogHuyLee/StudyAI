@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% block title %}{{ course.name }} – StudyAI{% endblock %}
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
+  <div>
+    <div class="page-title mb-1"><i class="bi bi-people"></i> {{ course.name }}</div>
+    <div class="text-muted small">
+      {{ course.code or '' }} · GV: {{ course.teacher.full_name or course.teacher.username }}
+      · <span class="badge bg-secondary">{{ course.status_label }}</span>
+    </div>
+  </div>
+  <div class="d-flex gap-2">
+    {% if current_user.is_student %}
+      {% if enroll %}
+        {% if enroll.payment_status != 'paid' %}
+        <form method="post" action="{{ url_for('courses.pay_class_direct', cid=course.id) }}">
+          <button class="btn btn-success btn-sm">Thanh toán {{ money(enroll.fee_amount) }}</button>
+        </form>
+        <form method="post" action="{{ url_for('courses.drop_class', cid=course.id) }}"
+              onsubmit="return confirm('Hủy đăng ký lớp này?')">
+          <button class="btn btn-outline-danger btn-sm">Hủy đăng ký</button>
+        </form>
+        {% endif %}
+        <span class="badge {{ 'bg-success' if enroll.payment_status=='paid' else 'bg-warning text-dark' }} align-self-center">
+          {{ enroll.payment_label }} · {{ money(enroll.fee_amount) }}
+        </span>
+      {% elif course.status == 'open' %}
+        <form method="post" action="{{ url_for('courses.enroll', cid=course.id) }}">
+          <button class="btn btn-primary">Đăng ký · {{ money(course.fee) }}</button>
+        </form>
+      {% endif %}
+    {% endif %}
+    {% if current_user.is_teacher or current_user.is_admin %}
+      <a href="{{ url_for('courses.teacher_class_manage', cid=course.id) }}" class="btn btn-outline-primary btn-sm">Quản lý lớp</a>
+    {% endif %}
+  </div>
+</div>
+
+{% if course.description %}
+<div class="card mb-3"><div class="card-body">{{ course.description }}</div></div>
+{% endif %}
+
+<div class="row g-3">
+  <div class="col-md-4">
+    <div class="card h-100">
+      <div class="card-header">Buổi học</div>
+      <ul class="list-group list-group-flush">
+        {% for s in course.sessions %}
+        <li class="list-group-item">
+          <b>{{ s.session_date.strftime('%d/%m/%Y') }}</b>
+          {% if s.start_time %} {{ s.start_time.strftime('%H:%M') }}{% if s.end_time %}–{{ s.end_time.strftime('%H:%M') }}{% endif %}{% endif %}
+          <br><small>{{ s.topic or '—' }} {% if s.room %}· {{ s.room }}{% endif %}</small>
+        </li>
+        {% else %}<li class="list-group-item text-muted">Chưa có buổi học</li>{% endfor %}
+      </ul>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card h-100">
+      <div class="card-header">Tài liệu</div>
+      <ul class="list-group list-group-flush">
+        {% for m in course.materials %}
+        <li class="list-group-item">
+          <b>{{ m.title }}</b>
+          {% if m.filename %}
+          <div><a class="btn btn-sm btn-outline-primary mt-1" href="{{ url_for('courses.download_material', mid=m.id) }}">
+            <i class="bi bi-download"></i> Tải về</a></div>
+          {% endif %}
+          {% if m.content and not m.content.startswith('[file:') %}
+          <div class="small text-muted mt-1" style="white-space:pre-wrap">{{ m.content[:200] }}{% if m.content|length > 200 %}…{% endif %}</div>
+          {% endif %}
+        </li>
+        {% else %}<li class="list-group-item text-muted">Chưa có tài liệu</li>{% endfor %}
+      </ul>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card h-100">
+      <div class="card-header">Bài tập / Kiểm tra</div>
+      <ul class="list-group list-group-flush">
+        {% for a in course.assignments %}
+        <li class="list-group-item">
+          <span class="badge bg-light text-dark">{{ {'homework':'Bài tập','quiz':'Kiểm tra','exam':'Thi'}.get(a.kind, a.kind) }}</span>
+          <b>{{ a.title }}</b>
+          {% if a.due_date %}<div class="small text-muted">Hạn: {{ a.due_date.strftime('%d/%m/%Y') }}</div>{% endif %}
+        </li>
+        {% else %}<li class="list-group-item text-muted">Chưa có</li>{% endfor %}
+      </ul>
+    </div>
+  </div>
+</div>
+{% endblock %}

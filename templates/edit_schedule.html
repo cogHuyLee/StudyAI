@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block content %}
+<h4>Sửa lịch học</h4>
+<form method="post" class="row g-3 col-md-8">
+  <div class="col-md-6">
+    <label class="form-label">Môn học</label>
+    <select name="subject_id" class="form-select" required>
+      {% for s in all_subjects %}
+      <option value="{{ s.id }}" {{ 'selected' if s.id == item.subject_id }}>{{ s.name }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="col-md-3">
+    <label class="form-label">Thứ</label>
+    <select name="weekday" class="form-select">
+      {% for i in range(7) %}<option value="{{ i }}" {{ 'selected' if i == item.weekday }}>{{ WEEKDAYS[i] }}</option>{% endfor %}
+    </select>
+  </div>
+  <div class="col-md-3">
+    <label class="form-label">Phòng</label>
+    <input name="room" class="form-control" value="{{ item.room or '' }}">
+  </div>
+  <div class="col-md-3">
+    <label class="form-label">Giờ bắt đầu</label>
+    <input type="time" name="start_time" class="form-control" value="{{ item.start_time.strftime('%H:%M') }}" required>
+  </div>
+  <div class="col-md-3">
+    <label class="form-label">Giờ kết thúc</label>
+    <input type="time" name="end_time" class="form-control" value="{{ item.end_time.strftime('%H:%M') }}" required>
+  </div>
+  <div class="col-12">
+    <button class="btn btn-primary">Lưu</button>
+    <a href="{{ url_for('schedule') }}" class="btn btn-outline-secondary">Huỷ</a>
+  </div>
+</form>
+{% endblock %}

@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}Ví giảng viên – StudyAI{% endblock %}
+{% block content %}
+<div class="page-title"><i class="bi bi-wallet2"></i> Ví giảng viên</div>
+<div class="row g-3 mb-4">
+  <div class="col-md-4">
+    <div class="stat-card success">
+      <div class="label">Số dư hiện tại</div>
+      <div class="value" style="font-size:1.4rem">{{ money(balance) }}</div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="stat-card accent">
+      <div class="label">Doanh thu lớp (đã thu)</div>
+      <div class="value" style="font-size:1.2rem">{{ money(revenue) }}</div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3">
+  <div class="col-md-5">
+    <div class="card card-body">
+      <h6 class="mb-3">Rút tiền về tài khoản</h6>
+      <form method="post" class="row g-2">
+        <div class="col-12">
+          <label class="form-label small">Số tiền (VND)</label>
+          <input name="amount" type="number" min="10000" step="1000" class="form-control" required>
+        </div>
+        <div class="col-12">
+          <label class="form-label small">Ngân hàng</label>
+          <input name="bank" class="form-control" placeholder="Vietcombank, MB, ...">
+        </div>
+        <div class="col-12">
+          <label class="form-label small">Số tài khoản</label>
+          <input name="account" class="form-control" placeholder="0123456789">
+        </div>
+        <div class="col-12">
+          <button class="btn btn-primary w-100">Rút tiền</button>
+        </div>
+      </form>
+          </div>
+  </div>
+  <div class="col-md-7">
+    <div class="card">
+      <div class="card-header">Lịch sử giao dịch</div>
+      <table class="table mb-0 table-sm">
+        <tr><th>Thời gian</th><th>Loại</th><th>Số tiền</th><th>Mô tả</th></tr>
+        {% for t in txns %}
+        <tr>
+          <td class="small">{{ t.created_at.strftime('%d/%m/%Y %H:%M') if t.created_at else '' }}</td>
+          <td>{{ t.kind }}</td>
+          <td class="{{ 'text-success' if t.amount > 0 else 'text-danger' }}">{{ money(t.amount) }}</td>
+          <td class="small">{{ t.description or '' }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="4" class="text-muted text-center">Chưa có giao dịch</td></tr>
+        {% endfor %}
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

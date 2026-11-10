@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Rút tiền GV – Admin{% endblock %}
+{% block content %}
+<div class="page-title"><i class="bi bi-bank"></i> Rút tiền giảng viên</div>
+<div class="row g-3">
+  <div class="col-md-5">
+    <form method="post" class="card card-body">
+      <div class="mb-3">
+        <label class="form-label fw-medium">Giảng viên</label>
+        <select name="teacher_id" class="form-select" required>
+          {% for t in teachers %}
+          <option value="{{ t.id }}">{{ t.full_name or t.username }} (số dư {{ money(t.balance or 0) }})</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="mb-3">
+        <label class="form-label fw-medium">Số tiền rút (VND)</label>
+        <input name="amount" type="number" min="1000" step="1000" class="form-control" required>
+      </div>
+      <div class="mb-3">
+        <label class="form-label fw-medium">Ghi chú</label>
+        <input name="note" class="form-control" placeholder="VD: Thanh toán thù lao tháng 3">
+      </div>
+      <button class="btn btn-primary">Ghi nhận rút tiền</button>
+    </form>
+  </div>
+  <div class="col-md-7">
+    <div class="card">
+      <div class="card-header">Lịch sử rút gần đây</div>
+      <table class="table mb-0 table-sm">
+        <tr><th>Thời gian</th><th>GV</th><th>Số tiền</th><th>Ghi chú</th></tr>
+        {% for h in history %}
+        <tr>
+          <td class="small">{{ h.created_at.strftime('%d/%m/%Y %H:%M') if h.created_at else '' }}</td>
+          <td>{{ h.user.full_name or h.user.username if h.user else '' }}</td>
+          <td class="text-danger">{{ money(h.amount) }}</td>
+          <td class="small">{{ h.description or '' }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="4" class="text-muted text-center">Chưa có</td></tr>
+        {% endfor %}
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

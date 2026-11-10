@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% block title %}{{ u.full_name or u.username }} – Admin{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between mb-3">
+  <div class="page-title mb-0"><i class="bi bi-person-badge"></i> {{ u.full_name or u.username }}</div>
+  <a href="{{ url_for('courses.admin_users') }}" class="btn btn-outline-secondary btn-sm">Danh sách</a>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-md-4">
+    <div class="card h-100">
+      <div class="card-body text-center py-4">
+        <div style="width:72px;height:72px;border-radius:50%;background:linear-gradient(135deg,#4f46e5,#06b6d4);
+                    color:#fff;font-size:1.6rem;font-weight:700;display:inline-flex;align-items:center;justify-content:center">
+          {{ (u.full_name or u.username)[0]|upper }}
+        </div>
+        <h5 class="mt-2 mb-0">{{ u.full_name or u.username }}</h5>
+        <div class="text-muted small">@{{ u.username }}</div>
+        <span class="badge bg-secondary mt-2">{{ u.role_label }}</span>
+        <div class="mt-3 fw-medium text-success">Số dư: {{ money(u.balance or 0) }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-8">
+    <div class="card">
+      <div class="card-header">Thông tin chi tiết</div>
+      <table class="table mb-0">
+        <tr><th class="text-muted" style="width:180px">Email</th><td>{{ u.email }}</td></tr>
+        <tr><th class="text-muted">SĐT</th><td>{{ u.phone or '—' }}</td></tr>
+        <tr><th class="text-muted">Ngày sinh</th><td>{{ u.birth_date.strftime('%d/%m/%Y') if u.birth_date else '—' }}</td></tr>
+        <tr><th class="text-muted">MSSV</th><td>{{ u.student_id or '—' }}</td></tr>
+        <tr><th class="text-muted">Trường</th><td>{{ u.school or '—' }}</td></tr>
+        <tr><th class="text-muted">Ngành / Lớp</th><td>{{ u.major or '—' }} / {{ u.class_name or '—' }}</td></tr>
+        <tr><th class="text-muted">Địa chỉ</th><td>{{ u.address or '—' }}</td></tr>
+        <tr><th class="text-muted">Giới thiệu</th><td>{{ u.bio or '—' }}</td></tr>
+        <tr><th class="text-muted">Ngày tạo</th><td>{{ u.created_at.strftime('%d/%m/%Y %H:%M') if u.created_at else '—' }}</td></tr>
+      </table>
+    </div>
+  </div>
+</div>
+
+{% if u.role == 'student' %}
+<div class="card mb-3">
+  <div class="card-header">Lớp đã đăng ký</div>
+  <table class="table mb-0 table-sm">
+    <tr><th>Lớp</th><th>Học phí</th><th>TT</th><th>Ngày ĐK</th></tr>
+    {% for e in enrolls %}
+    <tr>
+      <td>{{ e.course.name if e.course else '—' }}</td>
+      <td>{{ money(e.fee_amount) }}</td>
+      <td>{{ e.payment_label }}</td>
+      <td class="small">{{ e.enrolled_at.strftime('%d/%m/%Y') if e.enrolled_at else '' }}</td>
+    </tr>
+    {% else %}<tr><td colspan="4" class="text-muted text-center">Chưa đăng ký lớp</td></tr>{% endfor %}
+  </table>
+</div>
+{% endif %}
+
+{% if u.role == 'teacher' %}
+<div class="card mb-3">
+  <div class="card-header">Lớp đang dạy</div>
+  <ul class="list-group list-group-flush">
+    {% for c in teaching %}
+    <li class="list-group-item">{{ c.name }} · {{ c.status_label }} · {{ c.student_count }} SV</li>
+    {% else %}<li class="list-group-item text-muted">Chưa có lớp</li>{% endfor %}
+  </ul>
+</div>
+{% endif %}
+
+<div class="card">
+  <div class="card-header">Giao dịch ví gần đây</div>
+  <table class="table mb-0 table-sm">
+    <tr><th>Thời gian</th><th>Loại</th><th>Số tiền</th><th>TT</th><th>Mô tả</th></tr>
+    {% for t in txns %}
+    <tr>
+      <td class="small">{{ t.created_at.strftime('%d/%m/%Y %H:%M') if t.created_at else '' }}</td>
+      <td>{{ t.kind }}</td>
+      <td class="{{ 'text-success' if t.amount > 0 else 'text-danger' }}">{{ money(t.amount) }}</td>
+      <td>{{ t.status }}</td>
+      <td class="small">{{ t.description or '' }}</td>
+    </tr>
+    {% else %}<tr><td colspan="5" class="text-muted text-center">Chưa có</td></tr>{% endfor %}
+  </table>
+</div>
+{% endblock %}

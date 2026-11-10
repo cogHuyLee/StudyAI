@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Người dùng – Admin{% endblock %}
+{% block content %}
+<div class="page-title"><i class="bi bi-people"></i> Quản lý người dùng</div>
+<div class="mb-3 d-flex gap-2">
+  <a href="{{ url_for('courses.admin_users') }}" class="btn btn-sm {{ 'btn-primary' if not role else 'btn-outline-primary' }}">Tất cả</a>
+  <a href="{{ url_for('courses.admin_users', role='student') }}" class="btn btn-sm {{ 'btn-primary' if role=='student' else 'btn-outline-primary' }}">Sinh viên</a>
+  <a href="{{ url_for('courses.admin_users', role='teacher') }}" class="btn btn-sm {{ 'btn-primary' if role=='teacher' else 'btn-outline-primary' }}">Giảng viên</a>
+  <a href="{{ url_for('courses.admin_users', role='admin') }}" class="btn btn-sm {{ 'btn-primary' if role=='admin' else 'btn-outline-primary' }}">Admin</a>
+</div>
+<div class="card">
+  <div class="table-responsive">
+    <table class="table mb-0 align-middle">
+      <tr><th>User</th><th>Email</th><th>SĐT</th><th>Vai trò</th><th>Đổi role</th></tr>
+      {% for u in users %}
+      <tr>
+        <td>
+          <a href="{{ url_for('courses.admin_user_detail', uid=u.id) }}" class="fw-medium text-decoration-none">
+            {{ u.full_name or u.username }}
+          </a>
+          <div class="small text-muted">@{{ u.username }} · <a href="{{ url_for('courses.admin_user_detail', uid=u.id) }}">Chi tiết</a></div>
+        </td>
+        <td class="small">{{ u.email }}</td>
+        <td class="small">{{ u.phone or '—' }}</td>
+        <td><span class="badge bg-secondary">{{ u.role_label }}</span></td>
+        <td>
+          <form method="post" action="{{ url_for('courses.admin_set_role', uid=u.id) }}" class="d-flex gap-1">
+            <select name="role" class="form-select form-select-sm" style="width:auto">
+              <option value="student" {{ 'selected' if u.role=='student' }}>Sinh viên</option>
+              <option value="teacher" {{ 'selected' if u.role=='teacher' }}>Giảng viên</option>
+              <option value="admin" {{ 'selected' if u.role=='admin' }}>Admin</option>
+            </select>
+            <button class="btn btn-sm btn-outline-primary">Lưu</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </table>
+  </div>
+</div>
+{% endblock %}

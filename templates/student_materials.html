@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Tài liệu – StudyAI{% endblock %}
+{% block content %}
+<div class="page-title"><i class="bi bi-folder"></i> Tài liệu lớp học</div>
+<p class="text-muted">Tổng hợp tài liệu từ các lớp bạn đã đăng ký. Bấm tải về để xem file.</p>
+{% if materials %}
+<div class="card">
+  <table class="table mb-0 align-middle">
+    <tr><th>Tài liệu</th><th>Lớp</th><th>Ngày</th><th></th></tr>
+    {% for m in materials %}
+    <tr>
+      <td>
+        <b>{{ m.title }}</b>
+        {% if m.content and not m.content.startswith('[file:') %}
+        <div class="small text-muted">{{ m.content[:120] }}{% if m.content|length > 120 %}…{% endif %}</div>
+        {% endif %}
+      </td>
+      <td class="small">{{ m.course.name if m.course else '—' }}</td>
+      <td class="small">{{ m.uploaded_at.strftime('%d/%m/%Y') if m.uploaded_at else '' }}</td>
+      <td>
+        {% if m.filename %}
+        <a class="btn btn-sm btn-outline-primary" href="{{ url_for('courses.download_material', mid=m.id) }}">
+          <i class="bi bi-download"></i> Tải về
+        </a>
+        {% else %}
+        <span class="text-muted small">Không có file</span>
+        {% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+  </table>
+</div>
+{% else %}
+<div class="card card-body empty-state">
+  Chưa có tài liệu. Đăng ký lớp và chờ giảng viên upload.
+</div>
+{% endif %}
+{% endblock %}

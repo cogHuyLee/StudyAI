@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+{% block title %}Kết quả học tập – StudyAI{% endblock %}
+{% block content %}
+<div class="page-title"><i class="bi bi-bar-chart"></i> Kết quả học tập</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-6 col-md-3">
+    <div class="stat-card accent">
+      <div class="label">GPA (thang 4)</div>
+      <div class="value">{{ gpa if gpa is not none else '—' }}</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="stat-card success">
+      <div class="label">Xếp loại</div>
+      <div class="value" style="font-size:1.2rem">{{ classification }}</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="stat-card">
+      <div class="label">Tín chỉ tích lũy</div>
+      <div class="value">{{ total_credits }}</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="stat-card warning">
+      <div class="label">Lớp có điểm</div>
+      <div class="value">{{ graded_courses }}/{{ data|length }}</div>
+    </div>
+  </div>
+</div>
+<p class="small text-muted mb-3">
+  GPA = Σ (điểm hệ 4 × tín chỉ) / Σ tín chỉ.
+  Quy đổi: ≥8.5→4.0 · ≥8→3.5 · ≥7→3.0 · ≥6.5→2.5 · ≥5.5→2.0 · ≥5→1.5 · ≥4→1.0 · &lt;4→0.
+</p>
+
+{% if data %}
+<div class="card mb-4">
+  <div class="card-header">Biểu đồ điểm TB theo lớp</div>
+  <div class="card-body"><canvas id="chartResults" height="120"></canvas></div>
+</div>
+
+<div class="card mb-4">
+  <div class="table-responsive">
+    <table class="table mb-0 align-middle">
+      <tr><th>Lớp</th><th>TC</th><th>Điểm TB/10</th><th>Hệ 4</th><th>Điểm danh</th></tr>
+      {% for row in data %}
+      <tr>
+        <td>{{ row.course.name }}</td>
+        <td>{{ row.credits }}</td>
+        <td class="fw-medium">{{ row.avg if row.avg is not none else '—' }}</td>
+        <td>{{ row.gpa4 if row.gpa4 is not none else '—' }}</td>
+        <td class="small">{{ row.present }}/{{ row.total_att }}</td>
+      </tr>
+      {% endfor %}
+    </table>
+  </div>
+</div>
+
+{% for row in data %}
+<div class="card mb-3">
+  <div class="card-header d-flex justify-content-between">
+    <span><b>{{ row.course.name }}</b> <small class="text-muted">({{ row.credits }} TC)</small></span>
+    <span>TB {{ row.avg if row.avg is not none else '—' }} · Hệ 4: {{ row.gpa4 if row.gpa4 is not none else '—' }}</span>
+  </div>
+  <div class="p-3">
+    {% if row.grades %}
+    <table class="table table-sm mb-0">
+      <tr><th>Cột</th><th>Điểm</th><th>TS %</th><th>Ngày</th></tr>
+      {% for g in row.grades %}
+      <tr>
+        <td>{{ g.title }}</td>
+        <td>{{ g.score }}/{{ g.max_score|int }}</td>
+        <td>{{ g.weight|int if g.weight else '—' }}</td>
+        <td class="small">{{ g.taken_at.strftime('%d/%m/%Y') if g.taken_at else '' }}</td>
+      </tr>
+      {% endfor %}
+    </table>
+    {% else %}
+    <p class="text-muted small mb-0">Chưa có điểm thành phần.</p>
+    {% endif %}
+  </div>
+</div>
+{% endfor %}
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+const labels = {{ chart_labels | tojson }};
+const values = {{ chart_values | tojson }};
+const palette = ['#4f46e5','#0891b2','#059669','#d97706','#dc2626','#7c3aed'];
+new Chart(document.getElementById('chartResults'), {
+  type: 'bar',
+  data: {
+    labels: labels,
+    datasets: [{
+      label: 'Điểm TB / 10',
+      data: values,
+      backgroundColor: labels.map((_, i) => palette[i % palette.length]),
+      borderRadius: 8,
+    }]
+  },
+  options: {
+    scales: { y: { min: 0, max: 10, ticks: { stepSize: 1 } } },
+    plugins: { legend: { display: false } }
+  }
+});
+</script>
+{% else %}
+<div class="card card-body empty-state">
+  Bạn chưa đăng ký lớp nào. <a href="{{ url_for('courses.class_list') }}">Đăng ký lớp</a>
+</div>
+{% endif %}
+{% endblock %}

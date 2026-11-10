@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}Tổng quan – StudyAI{% endblock %}
+{% block content %}
+<div class="page-title"><i class="bi bi-house-door"></i> Xin chào, {{ current_user.full_name or current_user.username }}</div>
+<div class="row g-3 mb-3">
+  <div class="col-6 col-md-3"><div class="stat-card"><div class="label">Lớp đã đăng ký</div><div class="value">{{ enrolls|length }}</div></div></div>
+  <div class="col-6 col-md-3"><div class="stat-card accent"><div class="label">Buổi học hôm nay</div><div class="value">{{ classes|length }}</div></div></div>
+  <div class="col-6 col-md-3"><div class="stat-card warning"><div class="label">Học phí chưa TT</div><div class="value">{{ unpaid_n }}</div></div></div>
+  <div class="col-6 col-md-3"><div class="stat-card success"><div class="label">Số dư ví</div><div class="value" style="font-size:1.2rem">{{ '{:,.0f}'.format(balance).replace(',', '.') }} đ</div></div></div>
+</div>
+<div class="row g-3">
+  <div class="col-md-6">
+    <div class="card h-100">
+      <div class="card-header"><i class="bi bi-calendar-event me-1"></i> Lịch hôm nay</div>
+      <ul class="list-group list-group-flush">
+        {% for s in classes %}
+        <li class="list-group-item">
+          <b>{{ s.course.name }}</b>
+          {% if s.start_time %}<span class="badge bg-primary bg-opacity-10 text-primary">{{ s.start_time.strftime('%H:%M') }}{% if s.end_time %}–{{ s.end_time.strftime('%H:%M') }}{% endif %}</span>{% endif %}
+          {% if s.topic %}<div class="small text-muted">{{ s.topic }}</div>{% endif %}
+        </li>
+        {% else %}<li class="list-group-item empty-state">Không có buổi học hôm nay</li>{% endfor %}
+      </ul>
+      <div class="card-body py-2"><a href="{{ url_for('courses.student_schedule') }}">Xem toàn bộ lịch →</a></div>
+    </div>
+  </div>
+  <div class="col-md-6">
+    <div class="card h-100">
+      <div class="card-header"><i class="bi bi-alarm me-1"></i> Deadline sắp tới</div>
+      <ul class="list-group list-group-flush">
+        {% for a in upcoming %}
+        <li class="list-group-item d-flex justify-content-between">
+          <span><b>{{ a.title }}</b><br><small class="text-muted">{{ a.course.name }}</small></span>
+          <span class="badge bg-secondary">{{ a.due_date.strftime('%d/%m') if a.due_date else '' }}</span>
+        </li>
+        {% else %}<li class="list-group-item empty-state">Không có deadline gần</li>{% endfor %}
+      </ul>
+      <div class="card-body py-2"><a href="{{ url_for('courses.student_deadlines') }}">Xem tất cả deadline →</a></div>
+    </div>
+  </div>
+</div>
+<div class="mt-3 d-flex flex-wrap gap-2">
+  <a class="btn btn-primary" href="{{ url_for('courses.class_list') }}">Đăng ký lớp</a>
+  <a class="btn btn-outline-primary" href="{{ url_for('courses.wallet') }}">Thanh toán / Nạp ví</a>
+  <a class="btn btn-outline-primary" href="{{ url_for('courses.student_results') }}">Kết quả học tập</a>
+</div>
+{% endblock %}
