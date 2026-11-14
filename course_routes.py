@@ -6,8 +6,8 @@ from pathlib import Path
 
 from werkzeug.utils import secure_filename
 
-from flask import (Blueprint, flash, redirect, render_template, request,
-                   url_for)
+from flask import (Blueprint, flash, jsonify, redirect, render_template,
+                   request, url_for)
 from flask_login import current_user, login_required
 
 from models import (Attendance, Course, CourseAssignment, CourseGrade,
@@ -537,7 +537,7 @@ def wallet():
               .filter(Enrollment.status != "dropped").all())
     return render_template(
         "wallet.html", txns=txns, unpaid=unpaid, money=_money,
-        demo=vnpay.is_demo_mode(), balance=current_user.balance or 0)
+        configured=vnpay.is_configured(), balance=current_user.balance or 0)
 
 
 @bp.post("/wallet/topup")
@@ -553,7 +553,7 @@ def wallet_topup():
     if amount < 10000:
         flash("Số tiền nạp tối thiểu 10.000 đ.", "warning")
         return redirect(url_for("courses.wallet"))
-    import uuid
+
     txn_ref = f"TP{current_user.id}{uuid.uuid4().hex[:10].upper()}"
     wt = WalletTransaction(
         user_id=current_user.id, amount=amount, kind="topup",
@@ -562,40 +562,157 @@ def wallet_topup():
     )
     db.session.add(wt)
     db.session.commit()
+    return redirect(url_for("courses.wallet_pay", txn_ref=txn_ref))
+
+
+@bp.route("/wallet/pay/<txn_ref>")
+@login_required
+def wallet_pay(txn_ref):
+    """Trang quét mã VNPay QR."""
+    wt = WalletTransaction.query.filter_by(
+        txn_ref=txn_ref, user_id=current_user.id).first_or_404()
+    if wt.status == "success":
+        flash("Giao dịch đã thanh toán thành công.", "success")
+        return redirect(url_for("courses.wallet"))
+    if wt.status == "failed":
+        flash("Giao dịch đã thất bại. Vui lòng tạo lệnh nạp mới.", "danger")
+        return redirect(url_for("courses.wallet"))
+
     return_url = url_for("courses.vnpay_return", _external=True)
     ip = request.headers.get("X-Forwarded-For", request.remote_addr or "127.0.0.1")
-    url, is_demo = vnpay.build_payment_url(
-        amount, txn_ref, wt.description, return_url, client_ip=ip.split(",")[0].strip())
-    if is_demo:
-            return redirect(url)
+    try:
+        # Không ép VNPAYQR — sandbox hay báo "ngân hàng không hỗ trợ"
+        bank = (request.args.get("bank") or "").strip().upper()
+        pay_url, is_demo = vnpay.build_payment_url(
+            int(wt.amount), wt.txn_ref, wt.description or f"Nap tien {wt.txn_ref}",
+            return_url, client_ip=ip.split(",")[0].strip(),
+            bank_code=bank,  # "" = để VNPay hiện đủ phương thức
+        )
+    except ValueError as e:
+        flash(str(e), "danger")
+        return redirect(url_for("courses.wallet"))
+
+    return render_template(
+        "wallet_pay.html",
+        wt=wt, pay_url=pay_url, is_demo=is_demo, money=_money,
+        configured=vnpay.is_configured(),
+    )
 
 
 @bp.route("/wallet/vnpay-return")
 @login_required
 def vnpay_return():
     params = request.args.to_dict()
-    ok, msg = vnpay.verify_return(params)
-    txn_ref = params.get("vnp_TxnRef") or ""
-    wt = WalletTransaction.query.filter_by(txn_ref=txn_ref, user_id=current_user.id).first()
+    ok, msg, code = vnpay.verify_return(params)
+    txn_ref = vnpay.get_txn_ref(params)
+    wt = WalletTransaction.query.filter_by(
+        txn_ref=txn_ref, user_id=current_user.id).first()
     if not wt:
         flash("Không tìm thấy giao dịch.", "danger")
         return redirect(url_for("courses.wallet"))
     if wt.status == "success":
         flash("Giao dịch đã được xử lý trước đó.", "info")
         return redirect(url_for("courses.wallet"))
+
     if ok:
+        # Đối chiếu số tiền
+        paid = vnpay.get_amount_vnd(params)
+        if paid and abs(paid - float(wt.amount)) > 1:
+            flash(
+                f"Số tiền VNPay ({_money(paid)}) không khớp lệnh nạp "
+                f"({_money(wt.amount)}). Liên hệ hỗ trợ.",
+                "danger",
+            )
+            wt.status = "failed"
+            wt.completed_at = datetime.utcnow()
+            db.session.commit()
+            return redirect(url_for("courses.wallet"))
+
         wt.status = "success"
         wt.completed_at = datetime.utcnow()
-        wt.provider_txn = params.get("vnp_TransactionNo") or params.get("vnp_BankTranNo")
+        wt.provider_txn = vnpay.get_provider_txn(params) or None
         user = User.query.get(current_user.id)
-        user.balance = (user.balance or 0) + float(wt.amount)
+        user.balance = float(user.balance or 0) + float(wt.amount)
         db.session.commit()
-        flash(f"Nạp thành công { _money(wt.amount) }. Số dư: {_money(user.balance)}.", "success")
+        flash(
+            f"Nạp thành công {_money(wt.amount)}. Số dư: {_money(user.balance)}.",
+            "success",
+        )
     else:
         wt.status = "failed"
         wt.completed_at = datetime.utcnow()
         db.session.commit()
         flash(f"Thanh toán thất bại: {msg}", "danger")
+    return redirect(url_for("courses.wallet"))
+
+
+@bp.route("/wallet/vnpay-ipn", methods=["GET", "POST"])
+def vnpay_ipn():
+    """IPN server-to-server từ VNPay (không cần đăng nhập)."""
+    params = request.values.to_dict()
+    ok, msg, code = vnpay.verify_return(params)
+    txn_ref = vnpay.get_txn_ref(params)
+    wt = WalletTransaction.query.filter_by(txn_ref=txn_ref).first()
+    if not wt:
+        return jsonify({"RspCode": "01", "Message": "Order not found"}), 200
+    if wt.status == "success":
+        return jsonify({"RspCode": "02", "Message": "Order already confirmed"}), 200
+    if not ok:
+        wt.status = "failed"
+        wt.completed_at = datetime.utcnow()
+        db.session.commit()
+        return jsonify({"RspCode": "00", "Message": msg}), 200
+
+    paid = vnpay.get_amount_vnd(params)
+    if paid and abs(paid - float(wt.amount)) > 1:
+        return jsonify({"RspCode": "04", "Message": "Invalid amount"}), 200
+
+    wt.status = "success"
+    wt.completed_at = datetime.utcnow()
+    wt.provider_txn = vnpay.get_provider_txn(params) or None
+    user = User.query.get(wt.user_id)
+    if user:
+        user.balance = float(user.balance or 0) + float(wt.amount)
+    db.session.commit()
+    return jsonify({"RspCode": "00", "Message": "Confirm Success"}), 200
+
+
+@bp.get("/wallet/status/<txn_ref>")
+@login_required
+def wallet_status(txn_ref):
+    """API poll trạng thái giao dịch (trang QR)."""
+    wt = WalletTransaction.query.filter_by(
+        txn_ref=txn_ref, user_id=current_user.id).first_or_404()
+    return jsonify({
+        "status": wt.status,
+        "amount": wt.amount,
+        "txn_ref": wt.txn_ref,
+    })
+
+
+
+@bp.get("/wallet/vnpay-debug")
+@login_required
+def vnpay_debug():
+    """Kiểm tra app đã đọc được cấu hình VNPay chưa (chỉ admin)."""
+    if not current_user.is_admin:
+        flash("Chỉ admin xem được.", "danger")
+        return redirect(url_for("courses.wallet"))
+    info = vnpay.debug_config()
+    lines = [
+        f"configured = {info['configured']}",
+        f"VNP_TMN_CODE = {info['tmn_code']}",
+        f"VNP_HASH_SECRET = {info['hash_secret']}",
+        f"VNP_URL = {info['pay_url']}",
+    ]
+    if not info["configured"]:
+        lines.append(
+            "→ App CHƯA đọc được key. Kiểm tra file .env cạnh app.py, "
+            "cài python-dotenv, restart app."
+        )
+    else:
+        lines.append("→ Đã cấu hình. Tạo mã QR sẽ gọi cổng VNPay (không còn demo).")
+    flash(" | ".join(lines), "info" if info["configured"] else "warning")
     return redirect(url_for("courses.wallet"))
 
 

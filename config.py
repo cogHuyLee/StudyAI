@@ -26,8 +26,14 @@ class Config:
     DAILY_STUDY_HOURS = float(os.getenv("DAILY_STUDY_HOURS", 4))
     WEAK_THRESHOLD = 65  # % dưới ngưỡng này coi là "yếu"
 
-    # --- VNPay ---
-    # Để trống VNP_HASH_SECRET để dùng chế độ DEMO (giả lập thanh toán).
+    # --- VNPay (quét mã QR) ---
+    # Lấy TMN_CODE + HASH_SECRET từ merchant VNPay (sandbox hoặc production).
+    # Sandbox: https://sandbox.vnpayment.vn
     VNP_TMN_CODE = os.getenv("VNP_TMN_CODE", "")
     VNP_HASH_SECRET = os.getenv("VNP_HASH_SECRET", "")
-    VNP_URL = os.getenv("VNP_URL", "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html")
+    VNP_URL = os.getenv(
+        "VNP_URL",
+        "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html",
+    )
+    # Production ví dụ:
+    # VNP_URL=https://vnpayment.vn/paymentv2/vpcpay.html

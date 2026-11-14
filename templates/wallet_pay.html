@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% block title %}Quét mã VNPay – StudyAI{% endblock %}
+{% block content %}
+<div class="page-title"><i class="bi bi-qr-code-scan"></i> Thanh toán VNPay QR</div>
+
+<div class="row justify-content-center">
+  <div class="col-md-7 col-lg-5">
+    <div class="card shadow-sm">
+      <div class="card-body text-center p-4">
+        <div class="text-muted small mb-1">Mã giao dịch</div>
+        <div class="fw-semibold mb-3"><code>{{ wt.txn_ref }}</code></div>
+
+        <div class="display-6 fw-bold text-primary mb-1">{{ money(wt.amount) }}</div>
+        <div class="small text-muted mb-3">{{ wt.description or 'Nạp tiền ví StudyAI' }}</div>
+
+        {% if is_demo %}
+        <div class="alert alert-warning small text-start">
+          Chưa cấu hình <code>VNP_TMN_CODE</code> / <code>VNP_HASH_SECRET</code>.
+          Hệ thống đang dùng luồng nội bộ để kiểm thử. Thêm key merchant để quét mã VNPay thật.
+        </div>
+        {% endif %}
+
+        <div class="bg-white border rounded-3 p-3 d-inline-block mb-3">
+          <div id="qrcode" style="width:220px;height:220px;margin:0 auto"></div>
+        </div>
+
+        <div id="payStatus" class="alert alert-light border small mb-3">
+          Đang chờ thanh toán…
+        </div>
+
+        <div class="d-grid gap-2">
+          <a href="{{ pay_url }}" class="btn btn-primary" target="_blank" rel="noopener">
+            <i class="bi bi-box-arrow-up-right me-1"></i>
+            {% if is_demo %}Hoàn tất thanh toán thử{% else %}Thanh toán trên cổng VNPay{% endif %}
+          </a>
+          <a href="{{ url_for('courses.wallet') }}" class="btn btn-outline-secondary">Quay lại ví</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+(function () {
+  var url = {{ pay_url | tojson }};
+  var el = document.getElementById('qrcode');
+  if (el && url) {
+    new QRCode(el, {
+      text: url,
+      width: 220,
+      height: 220,
+      correctLevel: QRCode.CorrectLevel.M
+    });
+  }
+
+  var statusEl = document.getElementById('payStatus');
+  var txn = {{ wt.txn_ref | tojson }};
+  var pollUrl = {{ url_for('courses.wallet_status', txn_ref=wt.txn_ref) | tojson }};
+  var walletUrl = {{ url_for('courses.wallet') | tojson }};
+
+  function poll() {
+    fetch(pollUrl, { headers: { 'Accept': 'application/json' } })
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        if (data.status === 'success') {
+          statusEl.className = 'alert alert-success small mb-3';
+          statusEl.textContent = 'Thanh toán thành công! Đang chuyển về ví…';
+          setTimeout(function () { window.location.href = walletUrl; }, 1200);
+        } else if (data.status === 'failed') {
+          statusEl.className = 'alert alert-danger small mb-3';
+          statusEl.textContent = 'Giao dịch thất bại. Vui lòng thử lại.';
+        } else {
+          statusEl.className = 'alert alert-light border small mb-3';
+          statusEl.textContent = 'Đang chờ thanh toán…';
+          setTimeout(poll, 3000);
+        }
+      })
+      .catch(function () { setTimeout(poll, 4000); });
+  }
+  setTimeout(poll, 2500);
+})();
+</script>
+{% endblock %}

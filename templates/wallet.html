@@ -8,21 +8,37 @@
     <div class="stat-card success">
       <div class="label">Số dư ví</div>
       <div class="value" style="font-size:1.5rem">{{ money(balance) }}</div>
-          </div>
+    </div>
   </div>
   <div class="col-md-8">
     <div class="card card-body">
-      <h6 class="mb-3">1. Nạp tiền vào ví (VNPay)</h6>
+      <h6 class="mb-3">1. Nạp tiền bằng quét mã VNPay</h6>
       <form method="post" action="{{ url_for('courses.wallet_topup') }}" class="row g-2 align-items-end">
         <div class="col-md-4">
           <label class="form-label small">Số tiền (VND)</label>
-          <input name="amount" type="number" min="10000" step="1000" class="form-control" value="2000000" required>
+          <input name="amount" type="number" min="10000" step="1000" class="form-control" value="200000" required>
         </div>
         <div class="col-md-4">
-          <button class="btn btn-primary w-100"><i class="bi bi-credit-card me-1"></i>Nạp qua VNPay</button>
+          <button class="btn btn-primary w-100">
+            <i class="bi bi-qr-code-scan me-1"></i>Tạo mã QR VNPay
+          </button>
         </div>
-        <div class="col-md-4 small text-muted">Nạp xong dùng số dư để trả học phí bên dưới.</div>
+        <div class="col-md-4 small text-muted">
+          Tối thiểu 10.000 đ. Sau khi quét mã thành công, tiền vào ví để trả học phí.
+        </div>
       </form>
+      {% if not configured %}
+      <div class="alert alert-warning small mt-3 mb-0">
+        <b>App chưa đọc được key VNPay</b> — đang dùng QR kiểm thử nội bộ (không phải cổng sandbox).
+        <ol class="mb-1 ps-3">
+          <li>File <code>.env</code> phải nằm <b>cùng thư mục với app.py</b></li>
+          <li>Chạy <code>pip install python-dotenv</code></li>
+          <li>Tắt app (Ctrl+C) rồi chạy lại <code>python app.py</code></li>
+          <li>Admin: mở <a href="{{ url_for('courses.vnpay_debug') }}">/wallet/vnpay-debug</a> để kiểm tra</li>
+        </ol>
+      </div>
+      {% else %}
+      {% endif %}
     </div>
   </div>
 </div>
@@ -67,7 +83,7 @@
 <h5 class="mb-3">Lịch sử giao dịch</h5>
 <div class="card">
   <table class="table mb-0 table-sm">
-    <tr><th>Thời gian</th><th>Loại</th><th>Số tiền</th><th>TT</th><th>Mô tả</th></tr>
+    <tr><th>Thời gian</th><th>Loại</th><th>Số tiền</th><th>TT</th><th>Mô tả</th><th></th></tr>
     {% for t in txns %}
     <tr>
       <td class="small">{{ t.created_at.strftime('%d/%m/%Y %H:%M') if t.created_at else '' }}</td>
@@ -75,9 +91,14 @@
       <td class="{{ 'text-success' if t.amount > 0 else 'text-danger' }}">{{ money(t.amount) }}</td>
       <td><span class="badge {{ 'bg-success' if t.status=='success' else 'bg-warning text-dark' if t.status=='pending' else 'bg-secondary' }}">{{ t.status }}</span></td>
       <td class="small">{{ t.description or '' }}</td>
+      <td>
+        {% if t.status == 'pending' and t.kind == 'topup' and t.txn_ref %}
+        <a class="btn btn-sm btn-outline-primary" href="{{ url_for('courses.wallet_pay', txn_ref=t.txn_ref) }}">Mở QR</a>
+        {% endif %}
+      </td>
     </tr>
     {% else %}
-    <tr><td colspan="5" class="text-muted text-center">Chưa có giao dịch</td></tr>
+    <tr><td colspan="6" class="text-muted text-center">Chưa có giao dịch</td></tr>
     {% endfor %}
   </table>
 </div>

@@ -1,5 +1,28 @@
 from collections import OrderedDict
 from datetime import date, datetime, time, timedelta
+from pathlib import Path
+import os
+import sys
+
+# Load .env TRƯỚC mọi import dùng biến môi trường
+_APP_DIR = Path(__file__).resolve().parent
+try:
+    from dotenv import load_dotenv
+    # Ưu tiên .env cạnh app.py, không phụ thuộc thư mục chạy lệnh
+    load_dotenv(_APP_DIR / ".env", override=True)
+    load_dotenv(override=True)  # fallback cwd
+except ImportError:
+    # Không có python-dotenv: tự đọc .env đơn giản
+    _env = _APP_DIR / ".env"
+    if _env.is_file():
+        for _line in _env.read_text(encoding="utf-8").splitlines():
+            _line = _line.strip()
+            if not _line or _line.startswith("#") or "=" not in _line:
+                continue
+            _k, _, _v = _line.partition("=")
+            _k, _v = _k.strip(), _v.strip().strip('"').strip("'")
+            if _k and _k not in os.environ:
+                os.environ[_k] = _v
 
 from flask import (Flask, flash, jsonify, redirect, render_template, request,
                    url_for)
@@ -18,6 +41,11 @@ WEEKDAYS = ["Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7", "C
 def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
+    # Đồng bộ Config → os.environ cho module vnpay
+    for _k in ("VNP_TMN_CODE", "VNP_HASH_SECRET", "VNP_URL", "VNP_RETURN_URL"):
+        _v = app.config.get(_k) or ""
+        if _v and not os.environ.get(_k):
+            os.environ[_k] = str(_v)
     db.init_app(app)
 
     login_manager = LoginManager()
