@@ -1,4 +1,4 @@
-# 🎓 Hệ thống trợ lý học tập thông minh bằng AI
+# Hệ thống trợ lý học tập thông minh bằng AI
 
 Công nghệ: **Python · Flask · Flask-Login · MySQL · Scikit-learn · NLP (TF-IDF tiếng Việt)**
 
